@@ -185,11 +185,23 @@
 .welcome .welcome-logo{padding:10px;background:#fbfaf4;border-radius:26px;filter:none;box-shadow:0 14px 34px rgba(0,0,0,.30)}
 .main::before{filter:none;opacity:1}
 .welcome{z-index:100}
+
+/* Onboarding: center the card on desktop and replace the browser's raw file picker. */
+.welcome{display:grid!important;place-items:center}
+.welcome-card{width:min(680px,100%);margin:0 auto;padding:clamp(4px,1.2vw,14px)}
+.welcome-card .form{padding:clamp(20px,2vw,30px)}
+.file-upload{display:grid!important;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:10px;width:100%;min-height:52px;margin:0 0 14px;padding:7px;border:1px solid rgba(255,255,255,.24);border-radius:12px;background:rgba(255,255,255,.10);cursor:pointer;transition:border-color .2s,background .2s}
+.file-upload:hover{border-color:rgba(241,213,139,.85);background:rgba(255,255,255,.16)}
+.file-upload:focus-within{outline:3px solid rgba(241,213,139,.8);outline-offset:2px}
+.file-upload input{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
+.file-upload-button{display:inline-flex;align-items:center;justify-content:center;min-height:36px;padding:7px 12px;border-radius:8px;background:#f1d58b;color:#0a4938;font-size:.86rem;font-weight:800;white-space:nowrap}
+.file-upload-name{min-width:0;overflow:hidden;color:#f5f8f5;font-size:.86rem;white-space:nowrap;text-overflow:ellipsis}
+@media(min-width:700px){.welcome{padding:32px}.welcome-card{max-height:calc(100dvh - 64px)}}
 </style>
 </head>
 <body>
   <audio id="music" loop preload="metadata"><source src="./assets/welcome-music.mp3" type="audio/mpeg"></audio>
-  <section id="welcome" class="welcome" style="display:flex;">
+  <section id="welcome" class="welcome">
     <div class="welcome-card">
       <img class="welcome-logo" src="./assets/ilm-yolida-logo.png" alt="Ilm Yo‘lida logotipi">
       <div class="step active" id="welcome-1">
@@ -217,7 +229,7 @@
         <div class="form">
           <label for="first-name">Ism</label><input id="first-name" type="text" autocomplete="given-name" placeholder="Ismingizni kiriting">
           <label for="last-name">Familiya</label><input id="last-name" type="text" autocomplete="family-name" placeholder="Familiyangizni kiriting">
-          <label for="photo">Profil rasmi <span style="font-weight:400">— ixtiyoriy</span></label><input id="photo" type="file" accept="image/*">
+          <label for="photo">Profil rasmi <span style="font-weight:400">— ixtiyoriy</span></label><label class="file-upload" for="photo"><input id="photo" type="file" accept="image/*" onchange="updatePhotoLabel(this)"><span class="file-upload-button">Rasm tanlash</span><span id="photo-name" class="file-upload-name">Rasm tanlanmagan</span></label>
           <button class="primary" type="button" onclick="showWelcome(4)">Davom etish</button>
         </div>
       </div>
@@ -445,11 +457,12 @@
       goWelcome(n);
     }
     function goWelcome(n){document.querySelectorAll('.step').forEach(el=>el.classList.remove('active'));const target=document.getElementById(`welcome-${n}`);if(target)target.classList.add('active');}
+    function updatePhotoLabel(input){const name=document.getElementById('photo-name');if(name)name.textContent=input.files?.[0]?.name||'Rasm tanlanmagan';}
     function enterApp(){if(!document.getElementById('agree').checked){alert('Yuqoridagi ma’lumotlar bilan tanishganingizni belgilang.');return}document.getElementById('music').pause();document.getElementById('welcome').style.display='none';storage.set('ilm-yolida-onboarded',true);localStorage.setItem('ilm-yolida-app-version',APP_VERSION);window.scrollTo(0,0);render();}
     if(storage.get('ilm-yolida-onboarded',false)){
       document.getElementById('welcome').style.display='none';
     }else{
-      document.getElementById('welcome').style.display='flex';
+      document.getElementById('welcome').style.display='grid';
       goWelcome(1);
     }
     render();
