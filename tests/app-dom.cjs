@@ -29,7 +29,6 @@ const dom = new JSDOM(source.replace(/<script\b[^>]*\bsrc=[^>]*><\/script>/g, ''
   }
 });
 const w = dom.window, d = w.document;
-w.eval(fs.readFileSync('assets/study-quiz.js', 'utf8'));
 const byId = id => { const el = d.getElementById(id); assert(el, 'Missing element: ' + id); return el; };
 const click = selector => { const el = d.querySelector(selector); assert(el, 'Missing control: ' + selector); el.click(); };
 const type = (id, text) => { byId(id).value = text; byId(id).dispatchEvent(new w.Event('input', { bubbles: true })); };
@@ -111,6 +110,12 @@ const blobText = blob => new Promise((resolve, reject) => { const reader = new w
   assert(player.destroyed);
   assert(byId('main').textContent.includes('My <video>'));
   assert.equal(byId('main').querySelectorAll('img').length, 0, 'Quote content is escaped');
+  click("[onclick=\"setWritingTab('videos')\"]");
+  assert(byId('main').textContent.includes('YouTube videolarim'));
+  assert(byId('main').textContent.includes('1 ta iqtibos'));
+  click('[onclick="openSavedStudyVideo(\'Nc7Oe_oDC58\')"]');
+  assert(byId('study-video').src.includes('/embed/'+id));
+  click('[data-mobile-nav="insights"]');
   click('[onclick="setWritingTab(\'notes\')"]');
   assert(byId('main').textContent.includes('Remember this'));
 

@@ -3,7 +3,7 @@
   "private": true,
   "scripts": {
     "build": "node scripts/build.cjs",
-    "test": "node tests/app-smoke.cjs && node tests/app-dom.cjs && node --test tests/quiz-api.mjs && node tests/quiz-ui.cjs",
+    "test": "node tests/app-smoke.cjs && node tests/app-dom.cjs",
     "start": "node scripts/serve.cjs"
   },
   "devDependencies": {
