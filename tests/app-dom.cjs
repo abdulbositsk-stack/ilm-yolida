@@ -29,6 +29,7 @@ const dom = new JSDOM(source.replace(/<script\b[^>]*\bsrc=[^>]*><\/script>/g, ''
   }
 });
 const w = dom.window, d = w.document;
+w.eval(fs.readFileSync('assets/study-quiz.js', 'utf8'));
 const byId = id => { const el = d.getElementById(id); assert(el, 'Missing element: ' + id); return el; };
 const click = selector => { const el = d.querySelector(selector); assert(el, 'Missing control: ' + selector); el.click(); };
 const type = (id, text) => { byId(id).value = text; byId(id).dispatchEvent(new w.Event('input', { bubbles: true })); };

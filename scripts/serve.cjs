@@ -2,13 +2,34 @@ const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
 const root = path.resolve(__dirname, '..');
-const types = { '.html': 'text/html; charset=utf-8', '.png': 'image/png', '.mp3': 'audio/mpeg' };
-const server = http.createServer((req, res) => {
+if (fs.existsSync(path.join(root, '.env'))) process.loadEnvFile(path.join(root, '.env'));
+process.env.ILM_LOCAL_DEV = 'true';
+const api = import('../server/quiz-jobs.mjs');
+const limits = new Map();
+const types = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.png': 'image/png', '.mp3': 'audio/mpeg' };
+const server = http.createServer(async (req, res) => {
   let pathname;
   try { pathname = decodeURIComponent(new URL(req.url, 'http://localhost').pathname); }
   catch { res.writeHead(400).end(); return; }
+  if (pathname === '/api/quiz' || pathname.startsWith('/api/quiz/')) {
+    const { readJobInput, startJob, runJob, getJob, json, apiError } = await api;
+    const create = pathname === '/api/quiz', bucket = (req.socket.remoteAddress || '') + (create ? ':create' : ':status');
+    const recent = (limits.get(bucket) || []).filter(time => Date.now() - time < 60000);
+    if (recent.length >= (create ? 4 : 40)) { res.writeHead(429, { 'Content-Type': 'application/json' }).end(JSON.stringify({ error: 'So‘rovlar limiti. Bir daqiqadan so‘ng urinib ko‘ring.' })); return; }
+    recent.push(Date.now()); limits.set(bucket, recent);
+    let response;
+    try {
+      if (create) {
+        const chunks = []; let size = 0;
+        for await (const chunk of req) { size += chunk.length; if (size > 450000) { res.writeHead(413).end(); return; } chunks.push(chunk); }
+        const request = new Request('http://' + req.headers.host + req.url, { method: req.method, headers: req.headers, ...(req.method !== 'GET' && req.method !== 'HEAD' ? { body: Buffer.concat(chunks) } : {}) });
+        response = json(await startJob(await readJobInput(request), { launch: async id => { setImmediate(() => runJob(id).catch(() => {})); } }), 202);
+      } else response = req.method === 'GET' ? json(await getJob(pathname.split('/').pop())) : json({ error: 'GET so‘rovi kerak.' }, 405);
+    } catch (error) { response = apiError(error); }
+    res.writeHead(response.status, Object.fromEntries(response.headers)); res.end(await response.text()); return;
+  }
   const relative = pathname === '/' ? 'index.html' : pathname.slice(1);
-  if (relative !== 'index.html' && !/^assets\/[a-z0-9-]+\.(png|mp3)$/i.test(relative)) {
+  if (relative !== 'index.html' && !/^assets\/[a-z0-9-]+\.(png|mp3|js)$/i.test(relative)) {
     res.writeHead(404).end('Not found'); return;
   }
   const file = path.join(root, relative);

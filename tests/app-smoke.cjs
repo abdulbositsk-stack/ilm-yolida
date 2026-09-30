@@ -8,6 +8,7 @@ for (const [index, match] of scripts.entries()) {
   new vm.Script(match[2], { filename: `inline-script-${index + 1}.js` });
 }
 console.log(`All ${scripts.length} inline scripts parse successfully.`);
+new vm.Script(fs.readFileSync('assets/study-quiz.js', 'utf8'), { filename: 'assets/study-quiz.js' });
 
 // Run the real page scripts with a small DOM substitute; no network or user data.
 const nodes = new Map();
