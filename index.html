@@ -177,6 +177,12 @@
     @media(min-width:1280px){.app{grid-template-columns:15.5rem minmax(0,1fr) 20rem}.view{max-width:62rem}}
     @media(min-width:1536px){.app{grid-template-columns:16.5rem minmax(0,1fr) 21.5rem}}
     @media(min-width:700px){.video,.video-meta{width:var(--video-w);margin-inline:auto}}
+    .video{min-height:200px}
+    .study-link-form label{min-width:0}
+    .study-link-form label:first-child{grid-column:1/-1}
+    .study-link-form input{min-width:0}
+    @media(max-width:1279px){.view-top{padding-top:44px}}
+    @media(max-width:699px){.bottom button span{font-size:.68rem}.study-caption{flex-wrap:wrap}}
     .options{display:grid;gap:.5rem}
     @media(min-width:1024px){.options{grid-template-columns:repeat(2,minmax(0,1fr))}}
   </style>
@@ -188,7 +194,7 @@
 .welcome{z-index:100}
 
 /* Onboarding: center the card on desktop and replace the browser's raw file picker. */
-.welcome{display:grid!important;place-items:center}
+.welcome{display:grid;place-items:center}
 .welcome-card{width:min(680px,100%);margin:0 auto;padding:clamp(4px,1.2vw,14px)}
 .welcome-card .form{padding:clamp(20px,2vw,30px)}
 .file-upload{display:grid!important;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:10px;width:100%;min-height:52px;margin:0 0 14px;padding:7px;border:1px solid rgba(255,255,255,.24);border-radius:12px;background:rgba(255,255,255,.10);cursor:pointer;transition:border-color .2s,background .2s}
@@ -289,15 +295,23 @@
       'Nc7Oe_oDC58':make([["Ustoz oq varaqni qora deb aytishni qaysi tushunchaga misol qildi?",["Voqelikni bilishga","Ilmning darajasiga","Jaholatga","Tajriba orqali o‘rganishga"],2],["Imom Ahmad ibn Hanbal Abu Zur’a kelganida nafl ibodatini to‘xtatishini qanday izohlagan?",["Naflni keyin o‘zi ado etishi mumkin, Abu Zur’adan olinadigan ilm esa hozir qo‘ldan ketishi mumkin","Nafl ibodatini keyinroq boshqalar ado etishi mumkin, ilmni esa yolg‘iz o‘rganish kerak","Mehmon bilan suhbatni tugatgach naflni jamoat bilan ado etish afzal","Ilm majlisida nafl ibodatini davom ettirish mumkin emas"],0],["Ustoz bir oyatni va ilmning bir bobini o‘rganish uchun ertalab chiqish haqida qanday ikki miqdorni keltirdi?",["Bir oyat uchun 1000, bir bob uchun 100 rakat nafl","Ikkalasi uchun ham 100 rakat nafl","Bir oyat uchun 100, bir bob uchun 1000 rakat nafl","Ikkalasi uchun ham 1000 rakat nafl"],2],["Ustozga ko‘ra, naqliy ilm bilan tajribiy ilmni tekshirishdagi farq qaysi?",["Naqliy ilm tajribada takrorlanadi, tajribiy ilm esa faqat rivoyat bilan o‘rganiladi","Ikkalasida ham rivoyat qiluvchining ishonchliligi yagona mezon","Ikkalasini ham qayta tajribadan o‘tkazish mumkin","Naqliy ilmda yetkazuvchining ishonchliligi muhim, tajribiy ilmni qayta sinash mumkin"],3],["Muso va Xizr alayhissalom qissasi bayonida Xizr qo‘ygan shart nima edi?",["Har bir ish sababini bajarishdan oldin tushuntirish","U gapirmaguncha Muso alayhissalom savol bermasligi","Faqat kemadagi voqea haqida savol berish","Uch voqeadan keyin safarni davom ettirish"],1],["Imom G‘azoliydan keltirilgan shahardagi faqihlar va tabib haqidagi misol qaysi fikrni asoslaydi?",["Har kim faqat fiqhni puxta o‘rganishi kerakligini","Tabiblikni faqat faqihlar o‘rganishi kerakligini","Jamiyatga zarur mutaxassisliklar yetishmasa, farzi kifoya ado bo‘lmasligini","Boshqa shahardan tabib chaqirish har doim yetarli ekanini"],2],["Ustozning kiberxavfsizlikka oid savolga javobida farzi kifoya qachon ayrim kishilar uchun farzi aynga aylanishi mumkin?",["Shu zarur sohani o‘rganishga faqat ularda imkon bo‘lganda","Ular boshqa sohani ko‘proq yoqtirganda","Jamiyatda mutaxassislar yetarli bo‘lganda","Ular bu sohani allaqachon o‘rgatib bo‘lganda"],0],["Tajribasi kamroq bo‘lgan dasturlash o‘qituvchisi haqidagi savolga ustoz pullik dars borasida nima dedi?",["Avval barcha mavzularni mukammal bilmaguncha hech kimga dars bermaslikni","Talabaga bilim darajasi haqida aytmasdan, bozor narxini olishni","Faqat bepul dars berishni, chunki tajriba hali kamligini","Bilimiga mos dars berib, holatini ochiq aytish va narxni insof bilan belgilashni"],3]],["Ustoz naqliy ilm va tajribiy ilmni tekshirish usullari haqida qanday farq aytdi? Shu farq siz o‘rganayotgan biror mavzuni baholashingizga qanday ta’sir qiladi?","Kiberxavfsizlik haqidagi savolga berilgan farzi kifoya va farzi ayn izohidan qaysi jihat sizga muhim tuyuldi? O‘z sharoitingizda uni qanday qo‘llaysiz?"])
     };
     const state={active:'Nc7Oe_oDC58',section:'podcasts',mode:'video',panel:null,panelTime:null,search:'',filter:'all',writingTab:'quotes',shareText:''};
-    const storage={get(k,f){try{return JSON.parse(localStorage.getItem(k))??f}catch{return f}},set(k,v){localStorage.setItem(k,JSON.stringify(v))}};
-    const APP_VERSION='4.1.0';
-    function ensureFreshInstall(){localStorage.setItem('ilm-yolida-app-version',APP_VERSION);}
+    const storage={
+      get(k,f){try{return JSON.parse(localStorage.getItem(k))??f}catch{return f}},
+      set(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch{alert('Saqlab bo‘lmadi. Brauzer xotirasi to‘lgan yoki saqlashga ruxsat yo‘q. Yozuvingizni nusxalab oling va qayta urinib ko‘ring.');return false}}
+    };
+    const APP_VERSION='4.2.0';
+    function ensureFreshInstall(){try{localStorage.setItem('ilm-yolida-app-version',APP_VERSION)}catch{}}
     ensureFreshInstall();
-    const completed=()=>storage.get('ilm-yolida-completed',{}),quotes=()=>storage.get('ilm-yolida-quotes',[]),notesList=()=>storage.get('ilm-yolida-notes',[]),current=()=>podcasts.find(p=>p.id===state.active),studyVideo=()=>storage.get('ilm-yolida-study-video',null);
+    const completed=()=>{const saved=storage.get('ilm-yolida-completed',{});if(!saved||typeof saved!=='object'||Array.isArray(saved))return {};return Object.fromEntries(Object.entries(saved).filter(([id,r])=>Object.hasOwn(tests,id)&&r&&Number.isFinite(r.score)&&Array.isArray(r.reflections)&&r.reflections.length===2&&r.reflections.every(v=>typeof v==='string')));};
+    const savedWritings=key=>{const items=storage.get(key,[]);return Array.isArray(items)?items.filter(i=>i&&typeof i.text==='string'&&typeof i.podcastId==='string'):[];};
+    const quotes=()=>savedWritings('ilm-yolida-quotes'),notesList=()=>savedWritings('ilm-yolida-notes'),current=()=>podcasts.find(p=>p.id===state.active)||podcasts[0];
+    const studyVideo=()=>{const v=storage.get('ilm-yolida-study-video',null);return v&&typeof v==='object'&&/^[A-Za-z0-9_-]{11}$/.test(v.id)&&typeof v.title==='string'?v:null;};
     function esc(v){return String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));}
-    function renderProfile(){const p=storage.get('ilm-yolida-profile',null);if(!p)return;document.getElementById('profile-name').textContent=`${p.first} ${p.last}`;const a=document.getElementById('avatar');a.innerHTML=p.photo?`<img src="${p.photo}" alt="">`:`${esc((p.first[0]+p.last[0]).toUpperCase())}`;}
+    function renderProfile(){const p=storage.get('ilm-yolida-profile',null),first=typeof p?.first==='string'?p.first:'Ilm',last=typeof p?.last==='string'?p.last:'yo‘lovchisi';document.getElementById('profile-name').textContent=first+' '+last;const a=document.getElementById('avatar');a.innerHTML=typeof p?.photo==='string'&&/^data:image\/(png|jpeg|webp|gif);base64,/.test(p.photo)?'<img src="'+esc(p.photo)+'" alt="">':esc(((first[0]||'I')+(last[0]||'Y')).toUpperCase());}
     function toDayKey(value){
       if(!value)return null;
+      const legacy=String(value).match(/^(\d{1,2})[./](\d{1,2})[./](\d{4})$/);
+      if(legacy){const [,day,month,year]=legacy;return `${year}-${month.padStart(2,'0')}-${day.padStart(2,'0')}`;}
       const d=new Date(value);
       if(Number.isNaN(d.getTime())){
         const parts=String(value).split('/').map(Number);
@@ -308,7 +322,7 @@
     }
     function computeStreak(){
       const dates=new Set();
-      Object.values(completed()).forEach(c=>{const k=toDayKey(c.finishedAt);if(k)dates.add(k);});
+      Object.values(completed()).forEach(c=>{const k=toDayKey(c.completedAt||c.finishedAt);if(k)dates.add(k);});
       quotes().forEach(i=>{const k=toDayKey(i.createdAt);if(k)dates.add(k);});
       notesList().forEach(i=>{const k=toDayKey(i.createdAt);if(k)dates.add(k);});
       if(!dates.size)return 0;
@@ -337,7 +351,7 @@
     function updateSearch(v){state.search=v;renderList();}
     function setFilter(f){state.filter=f;document.querySelectorAll('.filter-chip').forEach(b=>b.classList.remove('active'));document.getElementById(`filter-${f}`).classList.add('active');renderList();}
     function selectPodcast(id){closePodcastPanel();state.active=id;state.section='podcasts';state.mode='video';render();window.scrollTo({top:0,behavior:'smooth'});}function openSection(section){closePodcastPanel();state.section=section;state.mode='video';render();window.scrollTo({top:0,behavior:'smooth'});}
-    function render(){renderProfile();renderList();updateProgress();document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active'));document.querySelectorAll('.bottom button').forEach(b=>b.classList.remove('active'));const nav=document.getElementById(`nav-${state.section}`);if(nav)nav.classList.add('active');const mobileNav=document.querySelector(`.bottom button[data-mobile-nav="${state.section}"]`);if(mobileNav)mobileNav.classList.add('active');document.getElementById('main').innerHTML=state.section==='podcasts'?(state.mode==='test'?testView():state.mode==='result'?resultView():videoView()):state.section==='study'?studyView():state.section==='insights'?writingsView():state.section==='settings'?settingsView():progressView();ytPlayer=null;state.panel=null;state.panelTime=null;if((state.section==='podcasts'&&state.mode==='video')||state.section==='study')initYouTubePlayer();}
+    function render(){try{ytPlayer?.destroy?.()}catch{}ytPlayer=null;renderProfile();renderList();updateProgress();document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active'));document.querySelectorAll('.bottom button').forEach(b=>b.classList.remove('active'));const nav=document.getElementById(`nav-${state.section}`);if(nav)nav.classList.add('active');const mobileNav=document.querySelector(`.bottom button[data-mobile-nav="${state.section}"]`);if(mobileNav)mobileNav.classList.add('active');document.getElementById('main').innerHTML=state.section==='podcasts'?(state.mode==='test'?testView():state.mode==='result'?resultView():videoView()):state.section==='study'?studyView():state.section==='insights'?writingsView():state.section==='settings'?settingsView():progressView();ytPlayer=null;state.panel=null;state.panelTime=null;if((state.section==='podcasts'&&state.mode==='video')||state.section==='study')initYouTubePlayer();}
     function settingsView(){const profile=storage.get('ilm-yolida-profile',{first:'',last:''});return `<section class="view"><div class="view-top"><div><div class="eyebrow">Sozlamalar</div><h1 class="title">Ma\u2018lumotlarni boshqarish</h1></div></div><div class="card"><h2>Zahira nusxa (Backup)</h2><p class="sub" style="margin-bottom:10px">Profilingiz, testlar natijasi va insightlaringizni bitta faylga saqlab qo\u2018ying yoki avval saqlangan fayldan tiklang.</p><div class="settings-row"><button class="primary" type="button" onclick="exportData()">\u2b07\ufe0f Backup yuklab olish</button><label class="ghost action file-btn" style="display:inline-flex;align-items:center;gap:6px;padding:11px 17px;border-radius:10px">\u2b06\ufe0f Backupdan tiklash<input type="file" accept="application/json" onchange="importData(event)"></label></div><p class="settings-note">Import qilishda hozirgi ma\u2018lumotlar fayldagisi bilan almashtiriladi \u2014 avval tasdiqlash so\u2018raladi.</p></div><div class="card"><h2>Profil</h2><p class="sub">${esc(profile.first||'')} ${esc(profile.last||'')}</p><div class="settings-row" style="margin-top:12px"><button class="ghost" type="button" onclick="startFreshParticipant()">↻ Yangi ishtirokchi sifatida boshlash</button></div><p class="settings-note">Bu amal shu brauzerdagi barcha natijalar, iqtiboslar, notelar va profilni o‘chiradi. Keyingi ochilishda dastur 0 dan boshlanadi.</p></div></section>`;}
     function exportData(){
       const payload={
@@ -354,42 +368,69 @@
       const stamp=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
       a.href=url;a.download=`ilm-yolida-backup-${stamp}.json`;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
     }
+    function validateBackup(data){
+      const object=v=>v&&typeof v==='object'&&!Array.isArray(v);
+      const entry=v=>object(v)&&typeof v.text==='string'&&typeof v.podcastId==='string'&&typeof v.createdAt==='string';
+      if(!object(data)||(data.app&&data.app!=='ilm-yolida')||!object(data.completed)||!Array.isArray(data.quotes)||!Array.isArray(data.notes)||!data.quotes.every(entry)||!data.notes.every(entry))throw Error('format');
+      if(data.profile!=null&&(!object(data.profile)||typeof data.profile.first!=='string'||typeof data.profile.last!=='string'))throw Error('profile');
+      for(const [id,result] of Object.entries(data.completed)){if(!Object.hasOwn(tests,id)||!object(result)||!Number.isInteger(result.score)||result.score<0||result.score>tests[id].questions.length||!Array.isArray(result.reflections)||result.reflections.length!==2||!result.reflections.every(r=>typeof r==='string')||typeof result.finishedAt!=='string')throw Error('result');}
+      if(data.studyVideo!=null&&(!object(data.studyVideo)||!/^[A-Za-z0-9_-]{11}$/.test(data.studyVideo.id)||typeof data.studyVideo.title!=='string'))throw Error('video');
+      return {...data,studyVideo:data.studyVideo?{...data.studyVideo,url:'https://www.youtube.com/watch?v='+data.studyVideo.id}:null};
+    }
     function importData(event){
       const file=event.target.files[0];if(!file)return;
       const reader=new FileReader();
+      reader.onerror=()=>{alert('Faylni o‘qib bo‘lmadi.');event.target.value='';};
       reader.onload=()=>{
-        let data;try{data=JSON.parse(reader.result);}catch{alert('Fayl noto‘g‘ri formatda.');event.target.value='';return;}
-        if(!data||typeof data!=='object'||!('completed' in data)||!('quotes' in data)||!('notes' in data)){alert('Bu backup fayli to‘liq yoki mos formatda emas.');event.target.value='';return;}
+        let data;try{data=validateBackup(JSON.parse(reader.result));}catch{alert('Bu backup fayli to‘liq yoki mos formatda emas.');event.target.value='';return;}
         if(!confirm('Hozirgi ma’lumotlar backup faylidagi ma’lumotlar bilan almashtiriladi. Davom etasizmi?')){event.target.value='';return;}
-        if(data.profile)storage.set('ilm-yolida-profile',data.profile);
-        storage.set('ilm-yolida-completed',data.completed||{});
-        storage.set('ilm-yolida-quotes',Array.isArray(data.quotes)?data.quotes:[]);
-        storage.set('ilm-yolida-notes',Array.isArray(data.notes)?data.notes:[]);
-        storage.set('ilm-yolida-study-video',data.studyVideo&&typeof data.studyVideo==='object'?data.studyVideo:null);
-        storage.set('ilm-yolida-onboarded',true);localStorage.setItem('ilm-yolida-app-version',APP_VERSION);
+        const entries={'ilm-yolida-profile':data.profile||null,'ilm-yolida-completed':data.completed,'ilm-yolida-quotes':data.quotes,'ilm-yolida-notes':data.notes,'ilm-yolida-study-video':data.studyVideo,'ilm-yolida-onboarded':true};
+        const previous={};
+        try{
+          for(const key of Object.keys(entries))previous[key]=localStorage.getItem(key);
+          for(const [key,value] of Object.entries(entries))localStorage.setItem(key,JSON.stringify(value));
+        }catch{
+          for(const [key,value] of Object.entries(previous)){try{if(value===null)localStorage.removeItem(key);else localStorage.setItem(key,value)}catch{}}
+          alert('Backup saqlanmadi. Brauzer xotirasini tekshiring.');event.target.value='';return;
+        }
+        try{Object.keys(localStorage).filter(k=>k.startsWith('ilm-yolida-draft-')).forEach(k=>localStorage.removeItem(k))}catch{}
+        ensureFreshInstall();state.section='podcasts';state.mode='video';state.active=podcasts[0].id;
         alert('Backup muvaffaqiyatli tiklandi ✓');event.target.value='';document.getElementById('welcome').style.display='none';render();
       };
       reader.readAsText(file);
     }
     function startFreshParticipant(){
       if(!confirm('Yangi ishtirokchi sifatida boshlaysizmi? Shu brauzerdagi profil, test natijalari, iqtiboslar va notelar o‘chiriladi. Agar kerak bo‘lsa, avval Backup yuklab oling.'))return;
-      ['ilm-yolida-profile','ilm-yolida-completed','ilm-yolida-quotes','ilm-yolida-notes','ilm-yolida-insights','ilm-yolida-study-video','ilm-yolida-onboarded'].forEach(k=>localStorage.removeItem(k));Object.keys(localStorage).filter(k=>k.startsWith('ilm-yolida-draft-')).forEach(k=>localStorage.removeItem(k));
-      state.active='Nc7Oe_oDC58';state.section='podcasts';state.mode='video';state.panel=null;state.search='';state.filter='all';state.writingTab='quotes';localStorage.setItem('ilm-yolida-app-version',APP_VERSION);
-      document.getElementById('welcome').style.display='';
-      goWelcome(1);render();
+      try{['ilm-yolida-profile','ilm-yolida-completed','ilm-yolida-quotes','ilm-yolida-notes','ilm-yolida-insights','ilm-yolida-study-video','ilm-yolida-onboarded'].forEach(k=>localStorage.removeItem(k));Object.keys(localStorage).filter(k=>k.startsWith('ilm-yolida-draft-')).forEach(k=>localStorage.removeItem(k));}catch{alert('Ma’lumotlarni o‘chirib bo‘lmadi.');return;}
+      state.active=podcasts[0].id;state.section='podcasts';state.mode='video';state.panel=null;state.search='';state.filter='all';state.writingTab='quotes';ensureFreshInstall();
+      ['first-name','last-name','photo','pod-search'].forEach(id=>document.getElementById(id).value='');
+      document.getElementById('agree').checked=false;updatePhotoLabel(document.getElementById('photo'));
+      setFilter('all');closePodcastPanel();
+      document.getElementById('welcome').style.display='grid';goWelcome(1);render();
     }
     function extractYouTubeId(value){
-      try{const url=new URL(value.trim());const host=url.hostname.replace(/^www\./,'').replace(/^m\./,'');if(host==='youtu.be')return url.pathname.split('/').filter(Boolean)[0]||'';if(!host.endsWith('youtube.com'))return '';if(url.pathname==='/watch')return url.searchParams.get('v')||'';const parts=url.pathname.split('/').filter(Boolean);return ['embed','shorts','live'].includes(parts[0])?parts[1]||'':'';}catch{return '';}
+      try{
+        const raw=String(value).trim(),url=new URL(/^[a-z]+:\/\//i.test(raw)?raw:'https://'+raw);
+        if(!['https:','http:'].includes(url.protocol)||url.username||url.password)return '';
+        const host=url.hostname.replace(/^www\./,'').replace(/^m\./,''),parts=url.pathname.split('/').filter(Boolean);
+        let id='';
+        if(host==='youtu.be'&&parts.length===1)id=parts[0];
+        else if(['youtube.com','youtube-nocookie.com','music.youtube.com'].includes(host)){
+          if(url.pathname==='/watch')id=url.searchParams.get('v')||'';
+          else if(['embed','shorts','live'].includes(parts[0])&&parts.length===2)id=parts[1];
+        }
+        return /^[A-Za-z0-9_-]{11}$/.test(id)?id:'';
+      }catch{return '';}
     }
     function formatTimestamp(seconds){const s=Math.max(0,Math.floor(Number(seconds)||0)),h=Math.floor(s/3600),m=Math.floor((s%3600)/60),r=s%60;return h?`${h}:${String(m).padStart(2,'0')}:${String(r).padStart(2,'0')}`:`${m}:${String(r).padStart(2,'0')}`;}
     function writingContext(){if(state.section==='study'){const video=studyVideo();return video?{id:`youtube:${video.id}`,title:video.title||'YouTube videosi',url:video.url}:{id:'youtube:untitled',title:'YouTube videosi',url:''};}const p=current();return {id:p.id,title:p.title,url:`https://www.youtube.com/watch?v=${p.id}`};}
-    function loadStudyVideo(){const input=document.getElementById('study-url'),raw=input?.value.trim()||'',id=extractYouTubeId(raw);if(!id){const status=document.getElementById('study-url-status');if(status)status.textContent='Iltimos, to‘g‘ri YouTube linkini kiriting.';return;}const title=document.getElementById('study-title')?.value.trim()||'Mening YouTube videom';storage.set('ilm-yolida-study-video',{id,url:raw,title,addedAt:new Date().toISOString()});render();}
-    function clearStudyVideo(){storage.set('ilm-yolida-study-video',null);render();}
-    function studyView(){const video=studyVideo(),entryCount=video?quotes().filter(i=>i.podcastId==='youtube:'+video.id).length+notesList().filter(i=>i.podcastId==='youtube:'+video.id).length:0;return `<section class="view"><div class="view-top"><div><div class="eyebrow">Shaxsiy o‘quv maydoni</div><h1 class="title">YouTube bilan o‘rganish</h1><p class="sub">Video linkini qo‘ying, ko‘ring va kerakli joyida pauza qilib iqtibos yoki note saqlang.</p></div></div><div class="card study-intro"><div class="study-link-form"><label>YouTube video linki<input id="study-url" type="url" inputmode="url" placeholder="https://www.youtube.com/watch?v=..." value="${esc(video?.url||'')}"></label><label>Video nomi (ixtiyoriy)<input id="study-title" type="text" placeholder="Masalan: Tafsir darsi" value="${esc(video?.title||'')}"></label><button class="primary" type="button" onclick="loadStudyVideo()">Videoni ochish</button></div><span id="study-url-status" class="note-status" style="display:block;margin-top:8px"></span></div>${video?`<div class="study-caption"><div><b>${esc(video.title||'YouTube videosi')}</b><br><span>Yozuvlar ushbu video va vaqt bilan saqlanadi.</span></div><button class="ghost" type="button" onclick="clearStudyVideo()">Boshqa video</button></div><div class="video"><iframe title="${esc(video.title||'YouTube videosi')}" id="study-video" src="https://www.youtube-nocookie.com/embed/${encodeURIComponent(video.id)}?rel=0&amp;enablejsapi=1${location.protocol.startsWith('http')?`&amp;origin=${encodeURIComponent(location.origin)}`:''}" referrerpolicy="strict-origin-when-cross-origin" loading="eager" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div><div class="video-meta"><div><b>FORMAT</b>YouTube</div><div><b>USUL</b>Pauza qiling · Yozing</div><div><b>YOZUVLAR</b>${entryCount} ta</div></div><div class="tools"><button class="tool" type="button" onclick="openPanel('quote')">📝 Iqtibos yozib olish</button><button class="tool" type="button" onclick="openPanel('note')">🗒️ Note olish</button></div>`:`<div class="empty"><h2>Videongizni qo‘shing</h2><p>Yuqoriga YouTube havolasini qo‘ying. Video shu yerda ochiladi va notelaringiz vaqt belgisi bilan saqlanadi.</p></div>`}</section>`;}
+    function loadStudyVideo(){const raw=document.getElementById('study-url')?.value.trim()||'',id=extractYouTubeId(raw),status=document.getElementById('study-url-status');if(!id){status.textContent='Iltimos, to‘g‘ri YouTube video linkini kiriting.';return;}const title=document.getElementById('study-title')?.value.trim()||'Mening YouTube videom';if(storage.set('ilm-yolida-study-video',{id,url:'https://www.youtube.com/watch?v='+id,title,addedAt:new Date().toISOString()}))render();}
+    function clearStudyVideo(){if(storage.set('ilm-yolida-study-video',null))render();}
+    function studyView(){const video=studyVideo(),entryCount=video?quotes().filter(i=>i.podcastId==='youtube:'+video.id).length+notesList().filter(i=>i.podcastId==='youtube:'+video.id).length:0;return `<section class="view"><div class="view-top"><div><div class="eyebrow">Shaxsiy o‘quv maydoni</div><h1 class="title">YouTube bilan o‘rganish</h1><p class="sub">Video linkini qo‘ying, ko‘ring va kerakli joyida pauza qilib iqtibos yoki note saqlang.</p></div></div><div class="card study-intro"><form class="study-link-form" onsubmit="event.preventDefault();loadStudyVideo()"><label>YouTube video linki<input id="study-url" type="text" inputmode="url" placeholder="https://www.youtube.com/watch?v=..." value="${esc(video?.url||'')}"></label><label>Video nomi (ixtiyoriy)<input id="study-title" type="text" placeholder="Masalan: Tafsir darsi" value="${esc(video?.title||'')}"></label><button class="primary" type="submit">Videoni ochish</button></form><span role="status" id="study-url-status" class="note-status" style="display:block;margin-top:8px"></span></div>${video?`<div class="study-caption"><div><b>${esc(video.title||'YouTube videosi')}</b><br><span>Yozuvlar ushbu video va vaqt bilan saqlanadi.</span></div><button class="ghost" type="button" onclick="clearStudyVideo()">Boshqa video</button></div><div class="video"><iframe title="${esc(video.title||'YouTube videosi')}" id="study-video" src="https://www.youtube-nocookie.com/embed/${encodeURIComponent(video.id)}?rel=0&amp;enablejsapi=1${location.protocol.startsWith('http')?`&amp;origin=${encodeURIComponent(location.origin)}`:''}" referrerpolicy="strict-origin-when-cross-origin" loading="eager" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div><div class="video-meta"><div><b>FORMAT</b>YouTube</div><div><b>USUL</b>Pauza qiling · Yozing</div><div><b>YOZUVLAR</b><span id="study-count">${entryCount} ta</span></div></div><div class="tools"><button class="tool" type="button" onclick="openPanel('quote')">📝 Iqtibos yozib olish</button><button class="tool" type="button" onclick="openPanel('note')">🗒️ Note olish</button></div>`:`<div class="empty"><h2>Videongizni qo‘shing</h2><p>Yuqoriga YouTube havolasini qo‘ying. Video shu yerda ochiladi va notelaringiz vaqt belgisi bilan saqlanadi.</p></div>`}</section>`;}
     function videoView(){const p=current(),hasTest=Boolean(tests[p.id]);return `<div class="main-header"><div><div class="eyebrow">${esc(p.topic)}</div><h1 class="title">${esc(p.title)}</h1><p class="sub">${esc(p.speaker)}</p></div>${hasTest?`<button class="action" type="button" onclick="openTest()">Testni boshlash</button>`:''}</div><div class="video"><iframe title="${esc(p.title)}" id="podcast-video" src="https://www.youtube-nocookie.com/embed/${p.id}?rel=0&amp;enablejsapi=1${location.protocol.startsWith('http')?`&amp;origin=${encodeURIComponent(location.origin)}`:''}" referrerpolicy="strict-origin-when-cross-origin" loading="eager" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div><div class="video-meta"><div><b>FORMAT</b>Podcast</div><div><b>TOPSHIRIQ</b>8 test + 2 xulosa</div><div><b>HOLAT</b>${completed()[p.id]?'Yakunlangan':hasTest?'Tayyor':'Tez orada'}</div></div><div class="tools"><button class="tool" type="button" onclick="openPanel('quote')">📝 Iqtibos yozib olish</button><button class="tool" type="button" onclick="openPanel('note')">🗒️ Note olish</button>${hasTest?`<button class="tool" type="button" onclick="openTest()">Test</button>`:`<button class="tool" type="button" disabled>🧩 Test tez orada</button>`}</div>`;}
     function openPanel(p){
       state.panelTime=getCurrentVideoTime();
-      pausePodcastVideo();
+      const paused=pausePodcastVideo();
       const currentPanel=document.querySelector('#main > .note');
       if(currentPanel)currentPanel.remove();
       state.panel=state.panel===p?null:p;
@@ -400,40 +441,43 @@
       const panel=wrap.firstElementChild;
       host.appendChild(panel);
       restoreWritingDraft(state.panel);
-      const pausedAt=document.createElement('p');pausedAt.className='settings-note';pausedAt.style.margin='0 0 8px';pausedAt.innerHTML=`Video pauza qilindi: ${writingTimeBadge()}`;panel.querySelector('.note-head')?.after(pausedAt);
+      const pausedAt=document.createElement('p');pausedAt.className='settings-note';pausedAt.style.margin='0 0 8px';pausedAt.innerHTML=(paused?'Yozuv vaqti: ':'Videoni player ichida pauza qiling. ')+writingTimeBadge();panel.querySelector('.note-head')?.after(pausedAt);
       panel.scrollIntoView({behavior:'smooth',block:'nearest'});
       panel.querySelector('textarea')?.focus({preventScroll:true});
     }
     function draftKey(kind){return `ilm-yolida-draft-${kind}-${writingContext().id}`;}
     function restoreWritingDraft(kind){
       const el=document.getElementById(kind==='quote'?'quote-text':'note2-text');
-      if(el)el.value=localStorage.getItem(draftKey(kind))||'';
+      if(!el)return;
+      try{const raw=localStorage.getItem(draftKey(kind));if(!raw)return;let draft;try{draft=JSON.parse(raw)}catch{}if(draft&&typeof draft.text==='string'){el.value=draft.text;state.panelTime=Number.isFinite(draft.seconds)?draft.seconds:null;}else el.value=raw;}catch{}
     }
     function saveWritingDraft(kind,el){
-      try{localStorage.setItem(draftKey(kind),el.value)}catch(e){/* storage may be disabled */}
+      try{localStorage.setItem(draftKey(kind),JSON.stringify({text:el.value,seconds:state.panelTime}))}catch{}
     }
     let ytPlayer=null;
+    function updateStudyCount(){const count=document.getElementById('study-count');if(count)count.textContent=[...quotes(),...notesList()].filter(i=>i.podcastId===writingContext().id).length+' ta';}
+    function playerNotice(message){let notice=document.getElementById('player-notice');if(!notice){const frame=document.querySelector('.video');if(!frame)return;notice=document.createElement('p');notice.id='player-notice';notice.className='settings-note';notice.setAttribute('role','status');frame.after(notice);}notice.textContent=message;}
     function initYouTubePlayer(){
       const frame=document.getElementById('podcast-video')||document.getElementById('study-video');
       if(!frame||!window.YT?.Player||frame.dataset.playerReady)return;
       frame.dataset.playerReady='true';
-      try{ytPlayer=new YT.Player(frame)}catch(e){frame.dataset.playerReady='';ytPlayer=null}
+      try{ytPlayer=new YT.Player(frame,{events:{onError:()=>{if(frame.isConnected)playerNotice('Video ochilmadi. U o‘chirilgan, yopiq yoki bu yerda ko‘rsatishga ruxsat berilmagan bo‘lishi mumkin. Boshqa videoni sinab ko‘ring.');}}})}catch(e){frame.dataset.playerReady='';ytPlayer=null}
     }
     function onYouTubeIframeAPIReady(){initYouTubePlayer();}
     function pausePodcastVideo(){
-      try{if(ytPlayer&&typeof ytPlayer.pauseVideo==='function')ytPlayer.pauseVideo()}catch(e){/* user can pause in player */}
+      try{if(typeof ytPlayer?.pauseVideo==='function'){ytPlayer.pauseVideo();return true}}catch{}return false;
     }
-    function getCurrentVideoTime(){try{return ytPlayer&&typeof ytPlayer.getCurrentTime==='function'?Math.floor(ytPlayer.getCurrentTime()||0):0}catch{return 0}}
+    function getCurrentVideoTime(){try{const time=ytPlayer?.getCurrentTime?.();return Number.isFinite(time)&&time>=0?Math.floor(time):null}catch{return null}}
     function insertAtCursor(id,text){const el=document.getElementById(id);if(!el)return;const start=el.selectionStart,end=el.selectionEnd;el.value=el.value.slice(0,start)+text+el.value.slice(end);el.focus();el.selectionStart=el.selectionEnd=start+text.length;el.dispatchEvent(new Event('input',{bubbles:true}));}
     function setQuoteFont(v){const el=document.getElementById('quote-text');if(el)el.style.fontFamily=v;}
-    function saveQuote(){const el=document.getElementById('quote-text');const text=el.value.trim();if(!text)return;const font=document.getElementById('quote-font').value,source=writingContext(),all=quotes();all.push({podcastId:source.id,sourceTitle:source.title,sourceUrl:source.url,text,font,timestamp:formatTimestamp(state.panelTime),seconds:state.panelTime,createdAt:new Date().toISOString()});storage.set('ilm-yolida-quotes',all);localStorage.removeItem(draftKey('quote'));el.value='';document.getElementById('quote-status').textContent='Saqlandi \u2713';}
-    function saveNote(){const el=document.getElementById('note2-text');const text=el.value.trim();if(!text)return;const source=writingContext(),all=notesList();all.push({podcastId:source.id,sourceTitle:source.title,sourceUrl:source.url,text,timestamp:formatTimestamp(state.panelTime),seconds:state.panelTime,createdAt:new Date().toISOString()});storage.set('ilm-yolida-notes',all);localStorage.removeItem(draftKey('note'));el.value='';document.getElementById('note2-status').textContent='Saqlandi \u2713';}
-    function writingTimeBadge(){return `<span class="timestamp">⏱ ${formatTimestamp(state.panelTime)}</span>`;}
+    function saveQuote(){const el=document.getElementById('quote-text');const text=el.value.trim();if(!text){el.focus();return;}const font=document.getElementById('quote-font').value,source=writingContext(),all=quotes();all.push({podcastId:source.id,sourceTitle:source.title,sourceUrl:source.url,text,font,timestamp:state.panelTime===null?null:formatTimestamp(state.panelTime),seconds:state.panelTime,createdAt:new Date().toISOString()});if(!storage.set('ilm-yolida-quotes',all))return;try{localStorage.removeItem(draftKey('quote'))}catch{}el.value='';document.getElementById('quote-status').textContent='Saqlandi \u2713';updateProgress();updateStudyCount();}
+    function saveNote(){const el=document.getElementById('note2-text');const text=el.value.trim();if(!text){el.focus();return;}const source=writingContext(),all=notesList();all.push({podcastId:source.id,sourceTitle:source.title,sourceUrl:source.url,text,timestamp:state.panelTime===null?null:formatTimestamp(state.panelTime),seconds:state.panelTime,createdAt:new Date().toISOString()});if(!storage.set('ilm-yolida-notes',all))return;try{localStorage.removeItem(draftKey('note'))}catch{}el.value='';document.getElementById('note2-status').textContent='Saqlandi \u2713';updateProgress();updateStudyCount();}
+    function writingTimeBadge(){return state.panelTime===null?'<span class="settings-note">Vaqt belgisi mavjud emas</span>':'<span class="timestamp">⏱ '+formatTimestamp(state.panelTime)+'</span>';}
     function quotePanel(){return `<section class="note"><div class="note-head"><b>Iqtibos yozib olish</b><span id="quote-status" class="note-status"></span></div><select id="quote-font" class="font-select" onchange="setQuoteFont(this.value)"><option value="Georgia,'Times New Roman',serif">Georgia \u2014 klassik</option><option value="'Courier New',monospace">Courier \u2014 mashinka</option><option value="'Brush Script MT','Segoe Script',cursive">Qo\u2018lyozma uslub</option><option value="Verdana,sans-serif">Verdana \u2014 aniq</option><option value="'Palatino Linotype',Palatino,serif">Palatino \u2014 kitobiy</option></select><div class="panel-toolbar"><button type="button" class="chip-btn" onclick="insertAtCursor('quote-text','\u2014 ')">\u2014</button><button type="button" class="chip-btn" onclick="insertAtCursor('quote-text','- ')">-</button><button type="button" class="chip-btn" onclick="insertAtCursor('quote-text','\u201c')">\u201c</button><button type="button" class="chip-btn" onclick="insertAtCursor('quote-text','\u201d')">\u201d</button><button type="button" class="chip-btn" onclick="insertAtCursor('quote-text','\u2026')">\u2026</button><button type="button" class="chip-btn" onclick="insertAtCursor('quote-text','\u2022 ')">\u2022</button></div><textarea id="quote-text" oninput="saveWritingDraft('quote',this)" style="font-family:Georgia,'Times New Roman',serif" placeholder="Podcastdan yodingizda qolgan iqtibosni shu yerga yozing..."></textarea><div class="note-controls"><button class="ghost" type="button" onclick="saveQuote()">Saqlash</button></div></section>`;}
     function notePanel(){return `<section class="note"><div class="note-head"><b>Note olish</b><span id="note2-status" class="note-status"></span></div><p class="settings-note" style="margin:0 0 8px">Fikrlaringizni bandlar yoki tarmoq (mind map) ko\u2018rinishida yozib boring.</p><div class="panel-toolbar"><button type="button" class="chip-btn" onclick="insertAtCursor('note2-text','\\n\u2022 ')">\u2022 Band</button><button type="button" class="chip-btn" onclick="insertAtCursor('note2-text','\\n   \u21B3 ')">\u21B3 Kichik band</button><button type="button" class="chip-btn" onclick="insertAtCursor('note2-text','\\n\\n# ')"># Mavzu</button></div><textarea id="note2-text" oninput="saveWritingDraft('note',this)" placeholder="Masalan:&#10;# Asosiy g\u2018oya&#10;\u2022 birinchi fikr&#10;   \u21B3 tafsilot&#10;\u2022 ikkinchi fikr"></textarea><div class="note-controls"><button class="ghost" type="button" onclick="saveNote()">Saqlash</button></div></section>`;}
     function openTest(){state.mode='test';render();}
     function testView(){const p=current(),test=tests[p.id];if(!test)return `<div class="empty"><h2>Bu podcastning testi hali tayyor emas</h2><p>Keyingi transkript kelishi bilan bu yerga 8 savol va 2 xulosa qo‘shiladi.</p><br><button class="primary" onclick="state.mode='video';render()">Videoga qaytish</button></div>`;return `<section class="view"><div class="view-top"><button class="back" type="button" onclick="state.mode='video';render()">← Videoga qaytish</button><span class="eyebrow">${completed()[p.id]?'Qayta ishlash':'2 kunlik topshiriq'}</span></div><div class="test-intro"><h2>${esc(p.title)}</h2><p>Avval 8 ta test savoliga javob bering. So‘ng 2 ta shaxsiy xulosangizni yozing.</p></div>${test.questions.map((q,i)=>`<article class="question"><div class="question-number">${i+1}-savol · test</div><h3>${esc(q[0])}</h3><div class="options">${q[1].map((o,j)=>`<label class="option"><input type="radio" name="q${i}" value="${j}"><span>${String.fromCharCode(65+j)}. ${esc(o)}</span></label>`).join('')}</div></article>`).join('')}<article class="reflection"><div class="question-number">9-savol · xulosa</div><label for="reflection-1">${esc(test.reflections[0])}</label><textarea id="reflection-1" placeholder="Fikringizni yozing..."></textarea></article><article class="reflection"><div class="question-number">10-savol · xulosa</div><label for="reflection-2">${esc(test.reflections[1])}</label><textarea id="reflection-2" placeholder="Aniq va samimiy yozing..."></textarea></article><div class="submit-row"><button class="primary" type="button" onclick="submitTest()">Javoblarni yakunlash</button></div></section>`;}
-    function submitTest(){const test=tests[state.active];let score=0;for(let i=0;i<test.questions.length;i++){const answer=document.querySelector(`input[name="q${i}"]:checked`);if(!answer){alert(`${i+1}-savolga javob bering.`);return}if(Number(answer.value)===test.questions[i][2])score++;}const r1=document.getElementById('reflection-1').value.trim(),r2=document.getElementById('reflection-2').value.trim();if(!r1||!r2){alert('Iltimos, 2 ta xulosa savoliga ham javob yozing.');return}const done=completed();done[state.active]={score,reflections:[r1,r2],finishedAt:new Date().toLocaleDateString('uz-UZ')};storage.set('ilm-yolida-completed',done);state.mode='result';render();window.scrollTo({top:0,behavior:'smooth'});}
+    function submitTest(){const test=tests[state.active];let score=0;for(let i=0;i<test.questions.length;i++){const answer=document.querySelector(`input[name="q${i}"]:checked`);if(!answer){alert(`${i+1}-savolga javob bering.`);return}if(Number(answer.value)===test.questions[i][2])score++;}const r1=document.getElementById('reflection-1').value.trim(),r2=document.getElementById('reflection-2').value.trim();if(!r1||!r2){alert('Iltimos, 2 ta xulosa savoliga ham javob yozing.');return}const done=completed();done[state.active]={score,reflections:[r1,r2],finishedAt:new Date().toLocaleDateString('uz-UZ'),completedAt:new Date().toISOString()};if(!storage.set('ilm-yolida-completed',done))return;state.mode='result';render();window.scrollTo({top:0,behavior:'smooth'});}
     function resultView(){const p=current(),done=completed()[p.id],test=tests[p.id],total=test?test.questions.length:8,required=Math.ceil(total*5/8),passed=done.score>=required,percent=Math.round(done.score/total*100),profile=storage.get('ilm-yolida-profile',{first:'Ilm',last:'yo‘lovchisi'}),podcastNumber=p.order||'Bank';
       const podQuotes=quotes().filter(q=>q.podcastId===p.id),podNotes=notesList().filter(n=>n.podcastId===p.id);
       const quotesText=podQuotes.map(q=>`“${q.text}”`).join('\n'),notesText=podNotes.map(n=>n.text).join('\n');
@@ -460,16 +504,16 @@
         const first=document.getElementById('first-name').value.trim(), last=document.getElementById('last-name').value.trim();
         if(!first||!last){alert('Ism va familiyangizni kiriting.');return}
         const file=document.getElementById('photo').files[0];
-        if(file){const reader=new FileReader();reader.onload=()=>{storage.set('ilm-yolida-profile',{first,last,photo:reader.result});goWelcome(4)};reader.readAsDataURL(file);return}
-        storage.set('ilm-yolida-profile',{first,last,photo:''});
+        if(file){if(!/^image\/(png|jpeg|webp|gif)$/.test(file.type)||file.size>2*1024*1024){alert('PNG, JPG, WebP yoki GIF rasm tanlang (2 MB gacha).');return;}const reader=new FileReader();reader.onerror=()=>alert('Rasmni o‘qib bo‘lmadi. Boshqa rasmni tanlang.');reader.onload=()=>{if(storage.set('ilm-yolida-profile',{first,last,photo:reader.result}))goWelcome(4)};reader.readAsDataURL(file);return}
+        if(!storage.set('ilm-yolida-profile',{first,last,photo:''}))return;
         goWelcome(4);return;
       }
-      if(n===2){const audio=document.getElementById('music');audio.volume=.18;audio.play().catch(()=>{});}
+      if(n===2){const audio=document.getElementById('music');try{audio.volume=.18;audio.play()?.catch(()=>{})}catch{}}
       goWelcome(n);
     }
     function goWelcome(n){document.querySelectorAll('.step').forEach(el=>el.classList.remove('active'));const target=document.getElementById(`welcome-${n}`);if(target)target.classList.add('active');}
     function updatePhotoLabel(input){const name=document.getElementById('photo-name');if(name)name.textContent=input.files?.[0]?.name||'Rasm tanlanmagan';}
-    function enterApp(){if(!document.getElementById('agree').checked){alert('Yuqoridagi ma’lumotlar bilan tanishganingizni belgilang.');return}document.getElementById('music').pause();document.getElementById('welcome').style.display='none';storage.set('ilm-yolida-onboarded',true);localStorage.setItem('ilm-yolida-app-version',APP_VERSION);window.scrollTo(0,0);render();}
+    function enterApp(){if(!document.getElementById('agree').checked){alert('Yuqoridagi ma’lumotlar bilan tanishganingizni belgilang.');return}document.getElementById('music').pause();if(!storage.set('ilm-yolida-onboarded',true))return;document.getElementById('welcome').style.display='none';ensureFreshInstall();window.scrollTo(0,0);render();}
     if(storage.get('ilm-yolida-onboarded',false)){
       document.getElementById('welcome').style.display='none';
     }else{

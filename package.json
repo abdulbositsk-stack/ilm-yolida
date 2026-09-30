@@ -1,0 +1,9 @@
+{
+  "name": "ilm-yolida",
+  "private": true,
+  "scripts": {
+    "test": "node tests/app-smoke.cjs && node tests/app-dom.cjs",
+    "start": "node scripts/serve.cjs"
+  },
+  "devDependencies": { "jsdom": "^26.1.0" }
+}
