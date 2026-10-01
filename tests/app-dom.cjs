@@ -222,7 +222,14 @@ const blobText = blob => new Promise((resolve, reject) => { const reader = new w
     });
     assert.deepEqual(reloadErrors, []);
     const welcome = reload.window.document.getElementById('welcome');
-    assert.equal(reload.window.getComputedStyle(welcome).display, blocked ? 'grid' : 'none');
+    assert.equal(reload.window.getComputedStyle(welcome).display, 'grid', 'Every new browser session must require the password');
+    if (!blocked) {
+      const password = reload.window.document.getElementById('access-password');
+      password.value = 'Ilm_yolida';
+      reload.window.unlockIlmYolida();
+      assert.equal(reload.window.getComputedStyle(welcome).display, 'none', 'Returning participant skips onboarding after password');
+      assert.equal(reload.window.document.getElementById('profile-name').textContent, 'Returning User');
+    }
     reload.window.close();
   }
   console.log('Returning-user startup and blocked-storage startup: PASS.');
