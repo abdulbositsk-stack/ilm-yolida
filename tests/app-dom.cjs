@@ -53,6 +53,8 @@ const blobText = blob => new Promise((resolve, reject) => { const reader = new w
   click('#welcome-4 button');
   assert.equal(w.getComputedStyle(byId('welcome')).display, 'none');
   assert(!/\.welcome\s*\{[^}]*display\s*:\s*grid\s*!important/.test(source), 'CSS must not force onboarding visible');
+  assert(byId('main').textContent.includes('48 soat'), 'Podcast starts only after explicit confirmation');
+  click('[onclick="setPodcastSchedule()"]');
   assert(byId('main').querySelector('iframe'));
 
   click('.podcast-picker');
