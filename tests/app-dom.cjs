@@ -131,6 +131,11 @@ const blobText = blob => new Promise((resolve, reject) => { const reader = new w
   assert(byId('dalil-card'));
   assert.equal(read('completed')[id].score, 8);
   assert(read('completed')[id].completedAt);
+  click('[onclick="openEvidenceDocument()"]');
+  assert(byId('main').querySelector('.evidence-document'), 'Full evidence document opens separately from the compact card');
+  assert(byId('main').textContent.includes('My first conclusion'));
+  assert(byId('main').textContent.includes('Iqtiboslar'));
+  assert(byId('main').textContent.includes('Qaydlar'));
   click('#nav-progress');
   assert(byId('main').textContent.includes('8/8'));
   assert.equal(w.toDayKey('30/09/2026'), '2026-09-30');
