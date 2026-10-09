@@ -60,6 +60,11 @@ const blobText = blob => new Promise((resolve, reject) => { const reader = new w
   assert(byId('main').textContent.includes('48 soat'), 'Podcast opens after a valid invite code');
   assert(byId('main').querySelector('.ustoz-podcast-library'), 'Ustozlar podcast catalog is visible in the main view');
   assert.equal(byId('main').querySelectorAll('.ustoz-podcast-choice').length, 12, 'All prepared podcasts are available from the catalog');
+  click('.ustoz-podcast-choice');
+  assert.equal(byId('main').querySelector('.ustoz-podcast-library'), null, 'Selected podcast opens in focus mode');
+  assert.equal(byId('main').querySelector('.ustoz-section-nav'), null, 'Focus mode hides unrelated navigation');
+  click('[onclick="backToPodcastLibrary()"]');
+  assert(byId('main').querySelector('.ustoz-podcast-library'), 'Back control returns to the podcast catalog');
   click('[onclick="setPodcastSchedule()"]');
   assert(byId('main').querySelector('iframe'));
 
