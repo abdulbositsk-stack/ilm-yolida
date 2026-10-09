@@ -4,7 +4,7 @@
   const memberships=()=>storage.get('ilm-yolida-group-memberships',{})||{};
   const saveMembership=(code,id)=>{const all=memberships();all[code]=id;storage.set('ilm-yolida-group-memberships',all)};
   const profileName=()=>{const p=storage.get('ilm-yolida-profile',{});return [p.first,p.last].filter(Boolean).join(' ')||'Ilm yo‘lovchisi'};
-  const api=async(path,body)=>{const response=await fetch('/api/groups'+path,{method:body?'POST':'GET',headers:body?{'Content-Type':'application/json'}:undefined,body:body?JSON.stringify(body):undefined});const data=await response.json();if(!response.ok)throw Error(data.error||'Xizmatda xatolik.');return data};
+  const api=async(path,body)=>{const response=await fetch('/api/groups'+path,{method:body?'POST':'GET',headers:body?{'Content-Type':'application/json'}:undefined,body:body?JSON.stringify(body):undefined});const raw=await response.text();let data;try{data=JSON.parse(raw)}catch{throw Error('Challenge xizmati hali tayyor emas. Sahifani yangilang yoki birozdan keyin qayta urinib ko‘ring.')}if(!response.ok)throw Error(data.error||'Xizmatda xatolik.');return data};
   const cache=()=>state.sharedGroups||[];
   const setCache=groups=>{state.sharedGroups=groups;};
   const refresh=async()=>{const codes=Object.keys(memberships());const groups=(await Promise.all(codes.map(async code=>{try{return (await api('/'+code)).group}catch{return null}}))).filter(Boolean);setCache(groups);if(state.section==='books'&&state.bookTab==='group')render();};

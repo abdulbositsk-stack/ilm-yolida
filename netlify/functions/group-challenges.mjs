@@ -6,4 +6,4 @@ export default async request => {
   return groupApi(request, parts[parts.length - 1] === 'groups' ? '' : parts.at(-1));
 };
 
-export const config = { path: '/api/groups/*', rateLimit: { windowLimit: 60, windowSize: 60, aggregateBy: ['ip', 'domain'] } };
+export const config = { path: ['/api/groups', '/api/groups/*'], rateLimit: { windowLimit: 60, windowSize: 60, aggregateBy: ['ip', 'domain'] } };
