@@ -24,6 +24,7 @@ const dom = new JSDOM(source.replace(/<script\b[^>]*\bsrc=[^>]*><\/script>/g, ''
       constructor(frame, options) { this.frame = frame; this.options = options; this.time = 65; players.push(this); }
       getCurrentTime() { return this.time; }
       pauseVideo() { this.paused = true; }
+      playVideo() { this.played = true; }
       destroy() { this.destroyed = true; }
     } };
   }
@@ -102,8 +103,11 @@ const blobText = blob => new Promise((resolve, reject) => { const reader = new w
   click('#main > .note [onclick="saveNote()"]');
   assert.equal(read('notes')[0].seconds, 65);
   assert.equal(byId('study-count').textContent, '2 ta');
+  assert.equal(byId('main').querySelector('.note'), null, 'Saved panel closes automatically');
+  assert.equal(player.played, true, 'Video resumes after saving');
   player.options.events.onError({data: 150});
   assert(byId('player-notice').textContent.includes('Video ochilmadi'));
+  click('[onclick="openPanel(\'note\')"]');
   type('note2-text', 'Keep this when saving fails');
   const originalSet = w.Storage.prototype.setItem;
   w.Storage.prototype.setItem = () => { throw new Error('Quota'); };
@@ -127,18 +131,20 @@ const blobText = blob => new Promise((resolve, reject) => { const reader = new w
   click('#nav-books');
   click('.program-welcome-primary');
   click('.program-welcome-primary');
-  type('program-access-code', '0405');
+  type('program-access-code', 'Kitob_0405');
   d.querySelector('.invite-form').dispatchEvent(new w.Event('submit', { bubbles: true, cancelable: true }));
   type('book-title', 'Small steps'); type('book-author', 'A writer'); type('book-pages', '120');
   d.querySelector('#main .module-form').dispatchEvent(new w.Event('submit', { bubbles: true, cancelable: true }));
   assert.equal(read('books').length, 1);
   click('#nav-notebook');
-  w.enterProgram();
+  click('.program-welcome-primary'); click('.program-welcome-primary'); type('program-access-code', 'Daftar_0405');
+  d.querySelector('.invite-form').dispatchEvent(new w.Event('submit', { bubbles: true, cancelable: true }));
   type('knowledge-title', 'Daily learning'); type('knowledge-text', 'Write one useful idea every day.'); type('knowledge-tags', 'habit, learning');
   d.querySelector('#main .module-form').dispatchEvent(new w.Event('submit', { bubbles: true, cancelable: true }));
   assert.equal(read('knowledge-notes').length, 1);
   click('#nav-plans');
-  w.enterProgram();
+  click('.program-welcome-primary'); click('.program-welcome-primary'); type('program-access-code', 'Amal_0405');
+  d.querySelector('.invite-form').dispatchEvent(new w.Event('submit', { bubbles: true, cancelable: true }));
   type('goal-title', 'Read every day'); type('goal-why', 'Build a lifelong habit');
   d.querySelector('#main .module-form').dispatchEvent(new w.Event('submit', { bubbles: true, cancelable: true }));
   assert.equal(read('learning-goals').length, 1);
