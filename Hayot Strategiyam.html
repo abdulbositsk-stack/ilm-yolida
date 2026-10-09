@@ -1,0 +1,1190 @@
+<!DOCTYPE html>
+<html lang="uz" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hayot Strategiyam</title>
+<style>
+:root{
+  --ink:#12211B; --ink-2:#465A50; --ink-3:#7A8C83;
+  --bg:#F6F5F1; --card:#FFFFFF; --line:#E3E7E2; --line-2:#EFF2EE;
+  --brand:#1B4332; --brand-2:#2D6A4F; --brand-3:#40916C; --brand-4:#74A892;
+  --gold:#9C6F19; --gold-bg:#FBF3DF; --mint:#EAF4EE;
+  --ok:#0E7A3C; --ok-bg:#DDF0E4;
+  --warn:#8A6100; --warn-bg:#FCEFC7;
+  --bad:#A5322B; --bad-bg:#FBE0DE;
+  --info:#1F5C8B; --info-bg:#DDEAF5;
+  --r:12px; --r-s:8px;
+  --sh:0 1px 2px rgba(18,33,27,.05), 0 4px 14px rgba(18,33,27,.05);
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{font-family:var(--sans);background:var(--bg);color:var(--ink);
+  font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+
+/* ---------- layout ---------- */
+.app{display:flex;min-height:100vh}
+.side{width:250px;flex:0 0 250px;background:var(--brand);color:#DCEAE1;
+  display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
+.side .brand{padding:20px 18px 14px;border-bottom:1px solid rgba(255,255,255,.1)}
+.side .brand h1{margin:0;font-size:15px;letter-spacing:.02em;color:#fff;font-weight:700}
+.side .brand p{margin:3px 0 0;font-size:11.5px;color:#9FBFAF}
+.nav{flex:1;overflow-y:auto;padding:10px 10px 20px}
+.nav .grp{font-size:10.5px;text-transform:uppercase;letter-spacing:.09em;
+  color:#7FA694;margin:14px 10px 6px;font-weight:700}
+.nav a{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:var(--r-s);
+  color:#CFE2D8;text-decoration:none;font-size:13.5px;cursor:pointer;margin-bottom:1px}
+.nav a:hover{background:rgba(255,255,255,.07);color:#fff}
+.nav a.on{background:var(--gold);color:#241900;font-weight:600}
+.nav a .ic{width:17px;text-align:center;font-size:14px;opacity:.95}
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.top{position:sticky;top:0;z-index:20;background:rgba(246,245,241,.93);
+  backdrop-filter:blur(8px);border-bottom:1px solid var(--line);
+  padding:12px 26px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.top h2{margin:0;font-size:18px;font-weight:700;letter-spacing:-.01em}
+.top .sub{font-size:12.5px;color:var(--ink-3);margin-top:1px}
+.top .sp{flex:1}
+.wrap{padding:22px 26px 70px;max-width:1400px;width:100%}
+.burger{display:none}
+
+/* ---------- atoms ---------- */
+.btn{border:1px solid var(--line);background:var(--card);border-radius:var(--r-s);
+  padding:7px 13px;font-size:13px;cursor:pointer;font-weight:500;white-space:nowrap}
+.btn:hover{border-color:var(--brand-4);background:var(--mint)}
+.btn.pri{background:var(--brand);border-color:var(--brand);color:#fff}
+.btn.pri:hover{background:var(--brand-2);border-color:var(--brand-2)}
+.btn.gold{background:var(--gold);border-color:var(--gold);color:#fff}
+.btn.gold:hover{filter:brightness(1.08)}
+.btn.sm{padding:4px 9px;font-size:12px}
+.btn.ghost{background:transparent}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);
+  box-shadow:var(--sh);margin-bottom:18px;overflow:hidden}
+.card>h3{margin:0;padding:13px 16px;font-size:13.5px;font-weight:700;
+  border-bottom:1px solid var(--line-2);display:flex;align-items:center;gap:9px}
+.card>h3 .hint{font-weight:400;color:var(--ink-3);font-size:12px}
+.card .bd{padding:16px}
+.card .bd.flush{padding:0}
+.grid{display:grid;gap:18px}
+.g2{grid-template-columns:1fr 1fr}
+.g3{grid-template-columns:repeat(3,1fr)}
+.muted{color:var(--ink-3)}
+.small{font-size:12.5px}
+.center{text-align:center}
+
+/* ---------- KPI ---------- */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:var(--r);
+  padding:13px 15px;box-shadow:var(--sh)}
+.kpi .k{font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;
+  color:var(--ink-3);font-weight:700}
+.kpi .v{font-size:26px;font-weight:700;letter-spacing:-.02em;margin-top:3px;
+  font-variant-numeric:tabular-nums;color:var(--brand)}
+.kpi .n{font-size:11.5px;color:var(--ink-3);margin-top:1px}
+
+/* ---------- hero ---------- */
+.hero{background:linear-gradient(135deg,#1B4332 0%,#2D6A4F 100%);color:#fff;
+  border-radius:var(--r);padding:22px 24px;margin-bottom:18px;box-shadow:var(--sh)}
+.hero .lb{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:#9FD3B7;font-weight:700}
+.hero .aim{font-size:19px;font-weight:600;margin-top:7px;line-height:1.4}
+.hero .niyat{font-size:13px;color:#C6E2D2;margin-top:10px;padding-top:10px;
+  border-top:1px solid rgba(255,255,255,.16)}
+.hero .empty{color:#9FD3B7;font-style:italic;font-weight:400;font-size:15px}
+
+/* ---------- tables ---------- */
+.tw{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th{background:var(--mint);color:var(--brand);font-weight:700;font-size:11.5px;
+  text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);
+  white-space:nowrap;position:sticky;top:0;z-index:2}
+td{padding:6px 8px;border-bottom:1px solid var(--line-2);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tbody tr:hover{background:#FAFCFA}
+td.num{text-align:center;font-variant-numeric:tabular-nums;white-space:nowrap}
+.cellin{width:100%;border:1px solid transparent;background:transparent;
+  border-radius:6px;padding:5px 7px;font-size:13px;resize:none;overflow:hidden;
+  min-height:30px;font-family:inherit}
+.cellin:hover{border-color:var(--line)}
+.cellin:focus{outline:none;border-color:var(--brand-3);background:#fff;
+  box-shadow:0 0 0 3px rgba(64,145,108,.12)}
+select.cellin{cursor:pointer;padding:5px 4px}
+.rowdel{opacity:0;border:none;background:transparent;color:var(--ink-3);
+  cursor:pointer;font-size:15px;padding:2px 6px;border-radius:6px}
+tr:hover .rowdel{opacity:1}
+.rowdel:hover{background:var(--bad-bg);color:var(--bad)}
+
+/* ---------- pills / status ---------- */
+.pill{display:inline-flex;align-items:center;gap:5px;padding:2px 9px;border-radius:999px;
+  font-size:11.5px;font-weight:600;white-space:nowrap}
+.p-ok{background:var(--ok-bg);color:var(--ok)}
+.p-warn{background:var(--warn-bg);color:var(--warn)}
+.p-bad{background:var(--bad-bg);color:var(--bad)}
+.p-info{background:var(--info-bg);color:var(--info)}
+.p-mut{background:#EEF1EE;color:var(--ink-2)}
+.p-gold{background:var(--gold-bg);color:var(--gold)}
+
+/* ---------- day blocks ---------- */
+.day{border:1px solid var(--line);border-radius:var(--r);background:var(--card);
+  margin-bottom:16px;overflow:hidden;box-shadow:var(--sh)}
+.day.today{border-color:var(--brand-3);box-shadow:0 0 0 3px rgba(64,145,108,.13),var(--sh)}
+.dhead{display:flex;align-items:center;gap:12px;padding:11px 15px;
+  background:var(--mint);border-bottom:1px solid var(--line)}
+.day.today .dhead{background:linear-gradient(90deg,#1B4332,#2D6A4F);color:#fff}
+.dhead .d1{font-weight:700;font-size:14.5px}
+.dhead .d2{font-size:12.5px;opacity:.8}
+.dhead .sp{flex:1}
+.dhead .mini{display:flex;gap:7px;align-items:center;font-size:12px}
+.day.today .dhead .mini .pill{background:rgba(255,255,255,.16);color:#fff}
+.drow{display:grid;grid-template-columns:96px 1fr 150px 132px 34px;gap:8px;
+  align-items:center;padding:3px 15px;border-bottom:1px solid var(--line-2)}
+.drow:last-child{border-bottom:none}
+.drow.namoz{background:var(--gold-bg)}
+.drow.maqsad{background:#FDFBF4}
+.drow.bosh{background:var(--gold-bg)}
+.drow .tag{font-size:10.5px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.05em;color:var(--ink-3);white-space:nowrap;overflow:hidden}
+.drow.namoz .tag{color:var(--gold)}
+.drow .amal{font-size:13.5px}
+.drow.namoz .amal{font-weight:700;color:#6B4B0A}
+.drow.bosh .amal{font-weight:700}
+.dfoot{padding:9px 15px;display:flex;gap:9px;background:#FBFCFB;
+  border-top:1px solid var(--line-2)}
+
+/* ---------- tracker ---------- */
+.trk{overflow-x:auto;padding-bottom:4px}
+table.trk-t{border-collapse:separate;border-spacing:2px;width:auto;min-width:100%}
+table.trk-t th{background:transparent;position:static;padding:2px;
+  font-size:10px;color:var(--ink-3);text-align:center;border:none}
+table.trk-t th.nm{text-align:left;padding-left:6px;min-width:190px}
+table.trk-t td{border:none;padding:0}
+.cell{width:22px;height:22px;border-radius:5px;background:#F2F4F2;
+  display:flex;align-items:center;justify-content:center;font-size:11px;
+  font-weight:700;cursor:default;border:1px solid transparent}
+.cell.s-ok{background:#B7DFC0;color:#0B5127;border-color:#98CFA5}
+.cell.s-warn{background:#FBE7B0;color:#6C4B00;border-color:#F0D68C}
+.cell.s-plan{background:#FDF3D3;color:#7A6420;border-color:#F2E4B5}
+.cell.s-bad{background:#F6C6C0;color:#8B2820;border-color:#EDAEA6}
+.cell.s-info{background:#CBDFF0;color:#1A4A70;border-color:#B0CDE6}
+.cell.off{background:transparent;border-color:transparent}
+.trk-name{font-size:12.5px;padding:2px 6px;white-space:nowrap;overflow:hidden;
+  text-overflow:ellipsis;max-width:220px}
+.trk-tot{font-size:12px;font-variant-numeric:tabular-nums;padding-left:8px;
+  white-space:nowrap;color:var(--ink-2)}
+.mhead{font-size:12.5px;font-weight:700;color:var(--brand);padding:14px 0 6px}
+
+/* ---------- forms ---------- */
+.fld{margin-bottom:15px}
+.fld label{display:block;font-size:12px;font-weight:700;color:var(--ink-2);margin-bottom:5px}
+.fld .hint{font-weight:400;color:var(--ink-3)}
+.inp{width:100%;border:1px solid var(--line);border-radius:var(--r-s);
+  padding:9px 11px;background:#fff;font-size:13.5px;font-family:inherit}
+.inp:focus{outline:none;border-color:var(--brand-3);box-shadow:0 0 0 3px rgba(64,145,108,.12)}
+textarea.inp{resize:vertical;min-height:74px;line-height:1.55}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+
+/* ---------- charts ---------- */
+.chart{width:100%}
+.chart text{font-family:var(--sans)}
+.axlab{font-size:10.5px;fill:var(--ink-3)}
+.vallab{font-size:11px;fill:var(--ink-2);font-weight:600}
+.gridln{stroke:var(--line-2);stroke-width:1}
+.tip{position:fixed;z-index:200;background:#12211B;color:#fff;font-size:12px;
+  padding:6px 9px;border-radius:7px;pointer-events:none;opacity:0;transition:opacity .1s;
+  box-shadow:0 6px 20px rgba(0,0,0,.22);white-space:nowrap}
+.tip.on{opacity:1}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--ink-2);
+  padding:8px 4px 0}
+.legend i{width:10px;height:10px;border-radius:3px;display:inline-block;margin-right:5px}
+.bar-lbl{display:grid;grid-template-columns:1fr auto;font-size:12.5px;margin-bottom:3px}
+.bar-track{height:9px;background:var(--line-2);border-radius:99px;overflow:hidden;margin-bottom:11px}
+.bar-fill{height:100%;border-radius:99px;background:var(--brand-2)}
+
+/* ---------- misc ---------- */
+.note{background:var(--gold-bg);border:1px solid #EDDFBC;border-radius:var(--r-s);
+  padding:11px 13px;font-size:12.5px;color:#5E4708;margin-bottom:16px}
+.tabs{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap}
+.tab{padding:7px 14px;border-radius:99px;border:1px solid var(--line);
+  background:var(--card);cursor:pointer;font-size:13px;font-weight:500}
+.tab.on{background:var(--brand);color:#fff;border-color:var(--brand)}
+.empty{padding:26px;text-align:center;color:var(--ink-3);font-size:13px}
+.dot{width:8px;height:8px;border-radius:99px;display:inline-block}
+.saveind{font-size:12px;color:var(--ink-3)}
+.saveind.dirty{color:var(--bad);font-weight:600}
+@media(max-width:1000px){
+  .g2,.g3{grid-template-columns:1fr}
+  .side{position:fixed;left:-260px;z-index:60;transition:left .2s;box-shadow:0 0 40px rgba(0,0,0,.3)}
+  .side.open{left:0}
+  .burger{display:inline-flex}
+  .wrap,.top{padding-left:16px;padding-right:16px}
+  .drow{grid-template-columns:1fr;gap:3px;padding:9px 13px}
+  .drow .tag{margin-bottom:-2px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side" id="side">
+    <div class="brand">
+      <h1>HAYOT STRATEGIYAM</h1>
+      <p id="brandSub">Bismillahir Rohmanir Rohiym</p>
+    </div>
+    <nav class="nav" id="nav"></nav>
+  </aside>
+  <div class="main">
+    <header class="top">
+      <button class="btn burger" onclick="document.getElementById('side').classList.toggle('open')">☰</button>
+      <div><h2 id="pgTitle">Boshqaruv</h2><div class="sub" id="pgSub"></div></div>
+      <div class="sp"></div>
+      <span class="saveind" id="saveInd"></span>
+      <button class="btn" onclick="importData()">📂 Yuklash</button>
+      <button class="btn pri" onclick="exportData()">💾 Saqlash</button>
+    </header>
+    <div class="wrap" id="view"></div>
+  </div>
+</div>
+<div class="tip" id="tip"></div>
+<input type="file" id="fileIn" accept=".json" style="display:none">
+<script>
+/* ===================== KONSTANTALAR ===================== */
+const HOLAT = ["Rejada","Jarayonda","Bajarildi","Bajarilmadi","Bekor qilindi"];
+const HOL_SYM = {"Rejada":"o","Jarayonda":"~","Bajarildi":"+","Bajarilmadi":"x","Bekor qilindi":"–"};
+const HOL_CLS = {"Rejada":"s-plan","Jarayonda":"s-warn","Bajarildi":"s-ok","Bajarilmadi":"s-bad","Bekor qilindi":"s-info"};
+const HOL_PILL= {"Rejada":"p-mut","Jarayonda":"p-warn","Bajarildi":"p-ok","Bajarilmadi":"p-bad","Bekor qilindi":"p-info"};
+const DARAJA = ["Bosh maqsad","Muhim maqsad","Qoʻshimcha maqsad"];
+const VAZN   = {"Bosh maqsad":4,"Muhim maqsad":2,"Qoʻshimcha maqsad":1};
+const KUNLAR = ["Dushanba","Seshanba","Chorshanba","Payshanba","Juma","Shanba","Yakshanba"];
+const OYLAR  = ["Yanvar","Fevral","Mart","Aprel","May","Iyun","Iyul","Avgust","Sentabr","Oktabr","Noyabr","Dekabr"];
+const SOHA   = ["Iymon va Maʼnaviyat","Sogʻliq va Jismoniy","Oila va Qarindoshlik","Ilm va Kasb",
+                "Moliya va Rizq","Ijtimoiy va Doʻstlik","Shaxsiy rivojlanish","Meros va Xayr"];
+const KITOB_H= ["Rejada","Oʻqilmoqda","Oʻqib tugatildi","Tashlab qoʻyildi"];
+const BILIM  = ["Bilmayman","Boshlangʻich","Oʻrta","Yuqori","Ustoz darajasi"];
+const ALOQA  = ["Har kuni","Har hafta","Har oy","Har 3 oyda","Har yili"];
+
+/* Bir kunning tuzilishi: t=turi, d=daraja, h=takroriy vazifa indeksi, x=matn */
+const KUN_SHABLON = [
+  {t:"Maqsad",d:"Bosh maqsad"},{t:"Maqsad",d:"Muhim maqsad"},{t:"Maqsad",d:"Muhim maqsad"},
+  {t:"Maqsad",d:"Qoʻshimcha maqsad"},{t:"Maqsad",d:"Qoʻshimcha maqsad"},
+  {t:"Takroriy",h:0},{t:"Vazifa"},
+  {t:"Namoz",x:"BOMDOD NAMOZI"},
+  {t:"Takroriy",h:1},{t:"Takroriy",h:2},{t:"Takroriy",h:3},{t:"Vazifa"},{t:"Vazifa"},
+  {t:"Namoz",x:"PESHIN NAMOZI"},
+  {t:"Vazifa"},{t:"Vazifa"},{t:"Vazifa"},
+  {t:"Namoz",x:"ASR NAMOZI"},
+  {t:"Takroriy",h:4},{t:"Vazifa"},{t:"Vazifa"},
+  {t:"Namoz",x:"SHOM NAMOZI"},
+  {t:"Takroriy",h:5},{t:"Vazifa"},
+  {t:"Namoz",x:"XUFTON NAMOZI"},
+  {t:"Takroriy",h:6},{t:"Vazifa"}
+];
+const TAKRORIY_BOSH = [
+  "Tahajjud / erta uygʻonish","Qurʼon tilovati (1 sahifa)","Ertalabki sport",
+  "Kunni rejalashtirish","Kitob oʻqish (45 daqiqa)","Ota-onamga qoʻngʻiroq",
+  "Kun kundaligini yozish","","","","",""
+];
+
+/* ===================== SANA YORDAMCHILARI ===================== */
+const pad=n=>String(n).padStart(2,"0");
+const iso=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const bugun=()=>{const d=new Date();return new Date(d.getFullYear(),d.getMonth(),d.getDate());};
+const parseISO=s=>{const[y,m,d]=s.split("-").map(Number);return new Date(y,m-1,d);};
+const fmtUz=s=>{const d=parseISO(s);return `${pad(d.getDate())}.${pad(d.getMonth()+1)}.${d.getFullYear()}`;};
+const kunNomi=s=>KUNLAR[(parseISO(s).getDay()+6)%7];
+const addDays=(d,n)=>{const x=new Date(d);x.setDate(x.getDate()+n);return x;};
+const dushanba=d=>addDays(d,-(((d.getDay()+6)%7)));
+const oyBoshi=d=>new Date(d.getFullYear(),d.getMonth(),1);
+const kunFarq=(a,b)=>Math.round((b-a)/86400000);
+const oyKunlari=(y,m)=>new Date(y,m+1,0).getDate();
+
+/* ===================== BOSHLANGʻICH HOLAT ===================== */
+function bosh(){
+  const t=bugun();
+  return {
+    v:1,
+    sozlama:{ism:"Abdulbosit",tug:"2004-11-19",umr:80,
+             soha:SOHA.map(()=>5),trkYil:t.getFullYear()},
+    oliy:{niyat:"",maqsad:"",missiya:"",shior:"",
+      meros:[["Foydali ilm","",""],["Solih farzand","",""],["Sadaqai jariya (uzluksiz xayr)","",""],
+             ["Yaratgan ish / muassasa","",""],["Tarbiyalagan insonlar","",""],["Yozgan asar / kitob","",""]],
+      vafot:[["Ota-onam","",""],["Turmush oʻrtogʻim","",""],["Farzandlarim","",""],
+             ["Ustozlarim","",""],["Doʻstlarim","",""],["Jamiyat / mahalla","",""]],
+      niyatlar:Array.from({length:10},()=>["","",""])},
+    qadr:{umumiy:["Rostgoʻylik","Adolat","Masʼuliyat","Sabr","Shukr","Kamtarlik","Vaqtga sadoqat",
+                  "Kishiga foyda","Ahdga vafo","Poklik","Ilmga intilish","Karam / saxovat"]
+                  .map(q=>({nom:q,tarif:"",amal:"",baho:5})),
+          xususiy:Array.from({length:6},()=>({nom:"",tarif:"",amal:"",baho:5})),
+          qizil:Array.from({length:6},()=>({nom:"",nega:"",kafforat:""}))},
+    insonlar:[{ism:"Onam",kim:"Ona",nega:"Meni dunyoga keltirgan, duosi rizqim",
+               masul:"Har kuni qoʻngʻiroq, roziligini olish",chast:"Har kuni",oxirgi:iso(t),duo:"Sogʻliq va uzoq umr"}],
+    otaona:{ota:"",ona:"",kunlik:"",
+            reja:[{orzu:"",kim:"Otam",nima:"",bosqich:"Har kunlik",holat:"Rejada",foiz:0}]},
+    maqsad:{d10:[],yil:[],oy:[],hafta:[]},
+    kunlar:[],
+    kundalik:[],
+    takroriy:TAKRORIY_BOSH.map(n=>({nom:n,maqsad:30})),
+    yaxshi:TAKRORIY_BOSH.map(n=>({sabab:"",trigger:"",boshlagan:"",rekord:0,holat:""})),
+    yomon:Array.from({length:6},()=>({nom:"",zarar:"",trigger:"",orniga:"",boshlagan:"",rekord:0,jazo:"",holat:""})),
+    ilm:Array.from({length:8},()=>({nom:"",nega:"",manba:"",ustoz:"",hozir:"",maqsad:"",boshlash:"",tugatish:"",soat:0,foiz:0,holat:""})),
+    kitob:Array.from({length:8},()=>({nom:"",muallif:"",nega:"",sahifa:0,boshlagan:"",tugatgan:"",holat:"",baho:0,fikr:"",taqriz:"",tatbiq:""})),
+    tanish:Array.from({length:8},()=>({ism:"",soha:"",nega:"",qanday:"",sana:"",holat:"",qadam:""})),
+    farzand:{falsafa:"",
+      sifat:["Iymon va taqvo","Rostgoʻylik","Ota-onaga ehtirom","Ilmga muhabbat",
+             "Masʼuliyat","Mehnatsevarlik","Kishiga foyda keltirish","Iroda va sabr"]
+             .map(s=>({nom:s,nega:"",ornak:"",qanday:""})),
+      bosqich:[["0–2 yosh","Mehr va xavfsizlik hissi"],["3–6 yosh","Odob, oʻyin orqali oʻrganish"],
+               ["7–10 yosh","Namoz, oʻqish odati, masʼuliyat"],["11–14 yosh","Shaxs shakllanishi, chegara"],
+               ["15–18 yosh","Mustaqil fikr, kasb tanlash"],["18+ yosh","Doʻstlik, maslahat, uzatish"]]
+               .map(b=>({yosh:b[0],vazifa:b[1],manaviy:"",ilm:"",axloq:"",jismoniy:""})),
+      hozir:["Oʻzimni tarbiyalash — farzand koʻrganini takrorlaydi","Turmush oʻrtogʻimni toʻgʻri tanlash",
+             "Tarbiya haqida kitoblar oʻqish","Moddiy poydevor tayyorlash","Sabr va gʻazabni boshqarish"]
+             .map(x=>({nima:x,nega:"",qachon:"",holat:""}))},
+    mukofot:[["Kunlik","Kunning BOSH maqsadini bajarsam","30 daqiqa sevimli mashgʻulot","Ertaga 30 daqiqa erta turaman"],
+             ["Haftalik","Haftaning 3 asosiy maqsadi bajarilsa","Doʻstlar bilan uchrashuv","Dam olish kunini ishga bagʻishlayman"],
+             ["Oylik","Oylik bajarilish 80% dan yuqori boʻlsa","Yangi kitob sotib olaman","Bir oy ortiqcha xarajatsiz yashayman"],
+             ["Yillik","Yilning BOSH maqsadi bajarilsa","Safar / sayohat","Keyingi yil rejasini qatʼiy bajaraman"],
+             ["10 yillik","Oʻn yillik bosh maqsad bajarilsa","Katta orzuimni amalga oshiraman","Sabab-oqibatini yozib tahlil qilaman"]]
+             .map(r=>({daraja:r[0],shart:r[1],mukofot:r[2],jazo:r[3],holat:""}))
+  };
+}
+let S = bosh();
+let dirty=false;
+function tegildi(){dirty=true;const e=document.getElementById("saveInd");
+  e.textContent="● saqlanmagan";e.className="saveind dirty";}
+function tozalandi(){dirty=false;const e=document.getElementById("saveInd");
+  e.textContent="";e.className="saveind";}
+
+/* ===================== MAQSAD DAVRLARI ===================== */
+function davrlar(tur){
+  const t=bugun(), out=[];
+  if(tur==="d10"){
+    for(let i=0;i<8;i++){const a=21+i*10;out.push({k:"y"+a,nom:`${a}–${a+9} yosh`,joriy:yosh()>=a&&yosh()<=a+9});}
+  } else if(tur==="yil"){
+    const y0=t.getFullYear();
+    for(let i=0;i<20;i++)out.push({k:"Y"+(y0+i),nom:(y0+i)+"-yil",joriy:i===0});
+  } else if(tur==="oy"){
+    let d=oyBoshi(t);
+    for(let i=0;i<24;i++){out.push({k:"M"+iso(d),nom:OYLAR[d.getMonth()]+" "+d.getFullYear(),joriy:i===0});
+      d=new Date(d.getFullYear(),d.getMonth()+1,1);}
+  } else {
+    let d=dushanba(t);
+    for(let i=0;i<52;i++){const e=addDays(d,6);
+      out.push({k:"W"+iso(d),nom:`${pad(d.getDate())}.${pad(d.getMonth()+1)} – ${pad(e.getDate())}.${pad(e.getMonth()+1)}`,joriy:i===0});
+      d=addDays(d,7);}
+  }
+  return out;
+}
+const joriyDavr=tur=>davrlar(tur).find(d=>d.joriy);
+
+/* ===================== HISOB-KITOB ===================== */
+function yosh(){const b=parseISO(S.sozlama.tug),t=bugun();
+  let y=t.getFullYear()-b.getFullYear();
+  if(t.getMonth()<b.getMonth()||(t.getMonth()===b.getMonth()&&t.getDate()<b.getDate()))y--;
+  return y;}
+function umrHisob(){
+  const b=parseISO(S.sozlama.tug),t=bugun();
+  const oxir=new Date(b.getFullYear()+S.sozlama.umr,b.getMonth(),b.getDate());
+  const otgan=kunFarq(b,t), jami=kunFarq(b,oxir);
+  return {otgan,jami,qolganKun:Math.max(0,jami-otgan),
+    otganHafta:Math.floor(otgan/7),qolganHafta:Math.floor(Math.max(0,jami-otgan)/7),
+    qolganYil:Math.max(0,S.sozlama.umr-yosh()),progress:jami?otgan/jami:0};
+}
+function kunTop(s){return S.kunlar.find(k=>k.sana===s);}
+function amalNomi(r){return r.t==="Takroriy"?(S.takroriy[r.h]?.nom||""):(r.x||"");}
+function kunFoiz(k){
+  if(!k)return null;let v=0,b=0;
+  k.rows.forEach(r=>{
+    if(r.t==="Namoz")return;
+    const nom=amalNomi(r); if(!nom)return;
+    const w=r.t==="Maqsad"?(VAZN[r.d]||1):1;
+    v+=w;
+    if(r.st==="Bajarildi")b+=w; else if(r.st==="Jarayonda")b+=w*0.5;
+  });
+  return v?b/v:null;
+}
+function kunNamoz(k){return k?k.rows.filter(r=>r.t==="Namoz"&&r.st==="Bajarildi").length:0;}
+function kunStat(k){
+  let reja=0,baj=0;
+  if(k)k.rows.forEach(r=>{if(r.t==="Namoz")return;if(!amalNomi(r))return;reja++;if(r.st==="Bajarildi")baj++;});
+  return {reja,baj};
+}
+function boshMaqsad(k){const r=k?.rows.find(r=>r.t==="Maqsad"&&r.d==="Bosh maqsad"&&r.x);return r?r.x:"";}
+function davrFoiz(tur,k){
+  const g=S.maqsad[tur].filter(x=>x.davr===k&&x.maqsad);
+  if(!g.length)return null;
+  let v=0,b=0;
+  g.forEach(x=>{const w=VAZN[x.daraja]||1;v+=w;
+    if(x.holat==="Bajarildi")b+=w;else if(x.holat==="Jarayonda")b+=w*0.5;});
+  return v?b/v:null;
+}
+function davrBosh(tur,k){const g=S.maqsad[tur].find(x=>x.davr===k&&x.daraja==="Bosh maqsad"&&x.maqsad);return g?g.maqsad:"";}
+
+/* yangi kun bloki */
+function yangiKun(sana){
+  return {sana,rows:KUN_SHABLON.map(t=>({t:t.t,d:t.d||"",h:t.h,x:t.x||"",st:"",izoh:""}))};
+}
+/* yetishmagan kunlarni avtomatik toʻldirish */
+function kunlarniTola(){
+  const t=bugun();
+  if(!S.kunlar.length){S.kunlar.push(yangiKun(iso(t)));}
+  else{
+    S.kunlar.sort((a,b)=>a.sana<b.sana?1:-1);
+    let oxirgi=parseISO(S.kunlar[0].sana);
+    let n=kunFarq(oxirgi,t);
+    if(n>90)n=90;
+    for(let i=1;i<=n;i++)S.kunlar.unshift(yangiKun(iso(addDays(oxirgi,i))));
+  }
+  if(!S.kundalik.length)S.kundalik.push(bosKundalik(iso(t)));
+  else{
+    S.kundalik.sort((a,b)=>a.sana<b.sana?1:-1);
+    let o=parseISO(S.kundalik[0].sana),n=kunFarq(o,t);
+    if(n>90)n=90;
+    for(let i=1;i<=n;i++)S.kundalik.unshift(bosKundalik(iso(addDays(o,i))));
+  }
+}
+const bosKundalik=s=>({sana:s,baho:0,yaxshi:"",shukr:"",organdim:"",xato:"",ertaga:"",yaqin:"",erkin:""});
+
+/* ===================== DIAGRAMMALAR (SVG) ===================== */
+const TIP=document.getElementById("tip");
+function tipOn(e,txt){TIP.textContent=txt;TIP.classList.add("on");
+  TIP.style.left=(e.clientX+14)+"px";TIP.style.top=(e.clientY-10)+"px";}
+function tipOff(){TIP.classList.remove("on");}
+function hookTips(root){
+  root.querySelectorAll("[data-tip]").forEach(el=>{
+    el.addEventListener("mousemove",e=>tipOn(e,el.dataset.tip));
+    el.addEventListener("mouseleave",tipOff);
+  });
+}
+const esc=s=>String(s??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+
+/* Donut: bitta koʻrsatkich (progress) */
+function donut(pct,center,sub){
+  const R=54,r=38,cx=70,cy=70,C=2*Math.PI*R;
+  const p=Math.max(0,Math.min(1,pct));
+  return `<svg class="chart" viewBox="0 0 140 140" style="max-width:170px;display:block;margin:0 auto">
+    <circle cx="${cx}" cy="${cy}" r="${(R+r)/2}" fill="none" stroke="#EFF2EE" stroke-width="${R-r}"/>
+    <circle cx="${cx}" cy="${cy}" r="${(R+r)/2}" fill="none" stroke="#1B4332" stroke-width="${R-r}"
+      stroke-linecap="round" stroke-dasharray="${p*2*Math.PI*(R+r)/2} ${2*Math.PI*(R+r)/2}"
+      transform="rotate(-90 ${cx} ${cy})"/>
+    <text x="${cx}" y="${cy-2}" text-anchor="middle" style="font-size:22px;font-weight:700;fill:#12211B">${center}</text>
+    <text x="${cx}" y="${cy+16}" text-anchor="middle" style="font-size:10.5px;fill:#7A8C83">${esc(sub)}</text>
+  </svg>`;
+}
+/* Vertikal ustunlar — bitta seriya */
+function barsV(items,{h=170,fmt=v=>v,color="#1B4332",max=null}={}){
+  if(!items.length)return `<div class="empty">Maʼlumot yoʻq</div>`;
+  const W=Math.max(320,items.length*34), pad={l:34,r:10,t:12,b:26};
+  const iw=W-pad.l-pad.r, ih=h-pad.t-pad.b;
+  const mx=max??Math.max(0.0001,...items.map(d=>d.v));
+  const bw=Math.min(26,iw/items.length-6);
+  let g="";
+  [0,.5,1].forEach(f=>{const y=pad.t+ih-f*ih;
+    g+=`<line class="gridln" x1="${pad.l}" y1="${y}" x2="${W-pad.r}" y2="${y}"/>
+        <text class="axlab" x="${pad.l-6}" y="${y+3}" text-anchor="end">${fmt(mx*f)}</text>`;});
+  items.forEach((d,i)=>{
+    const x=pad.l+(iw/items.length)*i+(iw/items.length-bw)/2;
+    const bh=Math.max(d.v>0?2:0,(d.v/mx)*ih), y=pad.t+ih-bh;
+    g+=`<rect x="${x}" y="${y}" width="${bw}" height="${bh}" rx="4" fill="${color}"
+         data-tip="${esc(d.l)}: ${fmt(d.v)}"/>
+        <text class="axlab" x="${x+bw/2}" y="${h-8}" text-anchor="middle">${esc(d.s??d.l)}</text>`;
+  });
+  return `<div style="overflow-x:auto"><svg class="chart" viewBox="0 0 ${W} ${h}" width="${W}" height="${h}">${g}</svg></div>`;
+}
+/* Gorizontal ustunlar — bitta seriya, toʻgʻridan-toʻgʻri belgilangan */
+function barsH(items,{fmt=v=>v,color="#2D6A4F",max=null}={}){
+  if(!items.length)return `<div class="empty">Maʼlumot yoʻq</div>`;
+  const mx=max??Math.max(0.0001,...items.map(d=>d.v));
+  return items.map(d=>`<div>
+      <div class="bar-lbl"><span>${d.dot?`<span class="dot" style="background:${d.dot};margin-right:6px"></span>`:""}${esc(d.l)}</span>
+      <b style="font-variant-numeric:tabular-nums">${fmt(d.v)}</b></div>
+      <div class="bar-track"><div class="bar-fill" style="width:${Math.max(d.v>0?2:0,(d.v/mx)*100)}%;background:${d.color||color}"></div></div>
+    </div>`).join("");
+}
+/* Chiziqli — bitta seriya, kesishuv nuqtalari bilan */
+function lineC(items,{h=180,fmt=v=>v,color="#9C6F19",max=null}={}){
+  if(!items.length)return `<div class="empty">Maʼlumot yoʻq</div>`;
+  const W=Math.max(360,items.length*22),pad={l:36,r:12,t:12,b:24};
+  const iw=W-pad.l-pad.r,ih=h-pad.t-pad.b;
+  const mx=max??Math.max(0.0001,...items.map(d=>d.v));
+  const X=i=>pad.l+(items.length>1?iw*i/(items.length-1):iw/2);
+  const Y=v=>pad.t+ih-(v/mx)*ih;
+  let g="";
+  [0,.5,1].forEach(f=>{const y=pad.t+ih-f*ih;
+    g+=`<line class="gridln" x1="${pad.l}" y1="${y}" x2="${W-pad.r}" y2="${y}"/>
+        <text class="axlab" x="${pad.l-6}" y="${y+3}" text-anchor="end">${fmt(mx*f)}</text>`;});
+  const pts=items.map((d,i)=>`${X(i)},${Y(d.v)}`).join(" ");
+  g+=`<polyline points="${pad.l},${pad.t+ih} ${pts} ${X(items.length-1)},${pad.t+ih}"
+        fill="${color}" opacity=".08" stroke="none"/>`;
+  g+=`<polyline points="${pts}" fill="none" stroke="${color}" stroke-width="2"
+        stroke-linejoin="round" stroke-linecap="round"/>`;
+  items.forEach((d,i)=>{
+    g+=`<circle cx="${X(i)}" cy="${Y(d.v)}" r="4" fill="#fff" stroke="${color}" stroke-width="2"
+         data-tip="${esc(d.l)}: ${fmt(d.v)}"/>`;
+    if(i%Math.ceil(items.length/8)===0)
+      g+=`<text class="axlab" x="${X(i)}" y="${h-7}" text-anchor="middle">${esc(d.s??d.l)}</text>`;
+  });
+  return `<div style="overflow-x:auto"><svg class="chart" viewBox="0 0 ${W} ${h}" width="${W}" height="${h}">${g}</svg></div>`;
+}
+const pctF=v=>Math.round(v*100)+"%";
+const intF=v=>Math.round(v);
+/* ===================== BOGʻLASH ===================== */
+function ref(p){return p.split(".").reduce((o,k)=>o[k],S);}
+function setv(p,i,k,v){const a=ref(p);a[i][k]=v;tegildi();}
+function setn(p,i,k,v){const a=ref(p);a[i][k]=Number(v)||0;tegildi();}
+function setf(p,k,v){const o=ref(p);o[k]=v;tegildi();}
+function grow(el){el.style.height="auto";el.style.height=(el.scrollHeight)+"px";}
+function autoGrow(root){root.querySelectorAll("textarea.cellin").forEach(grow);}
+
+function inp(p,i,k,v,type,opts){
+  const oi=`oninput="setv('${p}',${i},'${k}',this.value)"`;
+  if(type==="sel"){
+    return `<select class="cellin" onchange="setv('${p}',${i},'${k}',this.value);render()">
+      <option value=""></option>${opts.map(o=>`<option${o===v?" selected":""}>${esc(o)}</option>`).join("")}</select>`;
+  }
+  if(type==="num")return `<input class="cellin" type="number" style="text-align:center" value="${esc(v)}"
+     oninput="setn('${p}',${i},'${k}',this.value)">`;
+  if(type==="date")return `<input class="cellin" type="date" value="${esc(v)}" ${oi}>`;
+  if(type==="ta")return `<textarea class="cellin" rows="1" ${oi} oninput="setv('${p}',${i},'${k}',this.value);grow(this)">${esc(v)}</textarea>`;
+  return `<input class="cellin" value="${esc(v)}" ${oi}>`;
+}
+function tableCard(title,hint,path,cols,opt={}){
+  const rows=ref(path);
+  let h=`<div class="card"><h3>${esc(title)}${hint?`<span class="hint">${esc(hint)}</span>`:""}
+    <span style="flex:1"></span>
+    ${opt.add?`<button class="btn sm" onclick="addRow('${path}');render()">+ qator</button>`:""}</h3>
+    <div class="bd flush"><div class="tw"><table><thead><tr>`;
+  cols.forEach(c=>h+=`<th style="${c.w?`min-width:${c.w}px;`:""}">${esc(c.t)}</th>`);
+  h+=`<th style="width:34px"></th></tr></thead><tbody>`;
+  if(!rows.length)h+=`<tr><td colspan="${cols.length+1}"><div class="empty">Boʻsh — «+ qator» tugmasini bosing</div></td></tr>`;
+  rows.forEach((r,i)=>{
+    h+=`<tr>`;
+    cols.forEach(c=>{
+      const v=r[c.k]??"";
+      if(c.ro)h+=`<td class="${c.num?"num":""}"><b>${esc(v)}</b></td>`;
+      else if(c.type==="pill")h+=`<td class="num">${inp(path,i,c.k,v,"sel",c.opts)}</td>`;
+      else h+=`<td class="${c.type==="num"?"num":""}">${inp(path,i,c.k,v,c.type||"text",c.opts)}</td>`;
+    });
+    h+=`<td><button class="rowdel" title="oʻchirish" onclick="delRow('${path}',${i})">×</button></td></tr>`;
+  });
+  return h+`</tbody></table></div></div></div>`;
+}
+function addRow(path){const a=ref(path);const t=a[0]?Object.fromEntries(Object.keys(a[0]).map(k=>[k,typeof a[0][k]==="number"?0:""])):{};a.push(t);tegildi();}
+function delRow(path,i){if(!confirm("Shu qatorni oʻchirasizmi?"))return;ref(path).splice(i,1);tegildi();render();}
+
+/* ===================== 1. BOSHQARUV ===================== */
+function viewDash(){
+  const u=umrHisob(),t=iso(bugun()),k=kunTop(t),f=kunFoiz(k),st=kunStat(k);
+  const jr=S.kundalik.find(x=>x.sana===t);
+  const haftaK=joriyDavr("hafta").k, oyK=joriyDavr("oy").k, yilK=joriyDavr("yil").k, d10K=joriyDavr("d10")?.k;
+  const kpi=(k,v,n)=>`<div class="kpi"><div class="k">${k}</div><div class="v">${v}</div><div class="n">${n||""}</div></div>`;
+  const F=v=>v===null?"—":Math.round(v*100)+"%";
+
+  const oxirgi30=[];
+  for(let i=29;i>=0;i--){const s=iso(addDays(bugun(),-i)),kk=kunTop(s);
+    oxirgi30.push({l:fmtUz(s),s:pad(parseISO(s).getDate()),v:kunFoiz(kk)??0});}
+  const namoz30=oxirgi30.map((d,ix)=>{const s=iso(addDays(bugun(),-(29-ix)));
+    return {l:d.l,s:d.s,v:kunNamoz(kunTop(s))};});
+
+  let h=`<div class="hero"><div class="lb">Shaxsiy Oliy Maqsadim</div>
+    <div class="aim ${S.oliy.maqsad?"":"empty"}">${S.oliy.maqsad?esc(S.oliy.maqsad):"— hali yozilmagan. «Oliy Maqsad» boʻlimiga oʻting —"}</div>
+    <div class="niyat"><b>NIYATIM:</b> ${S.oliy.niyat?esc(S.oliy.niyat):"— hali yozilmagan —"}</div></div>`;
+
+  h+=`<div class="kpis">
+    ${kpi("Yoshim",yosh(),parseISO(S.sozlama.tug).getFullYear()+"-yilda tugʻilgan")}
+    ${kpi("Umr progressi",Math.round(u.progress*1000)/10+"%",S.sozlama.umr+" yil rejasi boʻyicha")}
+    ${kpi("Qolgan haftalar",u.qolganHafta.toLocaleString("ru-RU"),"har biri qaytmas")}
+    ${kpi("Bugun bajarildi",F(f),st.baj+" / "+st.reja+" amal")}
+    ${kpi("Bu hafta",F(davrFoiz("hafta",haftaK)),"haftalik maqsadlar")}
+    ${kpi("Bu yil",F(davrFoiz("yil",yilK)),"yillik maqsadlar")}</div>`;
+
+  h+=`<div class="grid g2">
+    <div class="card"><h3>🌙 Bugun<span class="hint">${fmtUz(t)} · ${kunNomi(t)}</span></h3><div class="bd">
+      <div class="fld"><label>Bugungi BOSH maqsadim</label>
+        <div style="font-size:15px;font-weight:600;color:${boshMaqsad(k)?"var(--brand)":"var(--ink-3)"}">
+        ${boshMaqsad(k)?esc(boshMaqsad(k)):"— bugun uchun yozilmagan —"}</div></div>
+      ${barsH([
+        {l:"Namoz (5 dan)",v:kunNamoz(k),color:"#9C6F19"},
+       ],{max:5,fmt:v=>v+" / 5"})}
+      ${barsH([{l:"Amallar bajarildi",v:st.baj,color:"#2D6A4F"}],{max:Math.max(1,st.reja),fmt:v=>v+" / "+st.reja})}
+      ${(()=>{const q=(k?.rows||[]).filter(r=>r.t!=="Namoz"&&amalNomi(r)&&r.st!=="Bajarildi").slice(0,6);
+        return q.length?`<div class="fld" style="margin-top:14px"><label>Bugun qolgan amallar (${q.length})</label>
+          <div style="font-size:13px;line-height:1.9">${q.map(r=>`<div>• ${esc(amalNomi(r))}
+          ${r.st?`<span class="pill ${HOL_PILL[r.st]}">${esc(r.st)}</span>`:""}</div>`).join("")}</div></div>`
+        :`<div class="small muted" style="margin-top:12px">Bugungi hamma amal bajarilgan — barakalla.</div>`;})()}
+      <div style="margin-top:12px"><a class="btn pri" onclick="go('kun')">Kunlik ishga oʻtish →</a></div>
+    </div></div>
+    <div class="card"><h3>📊 Umr progressi</h3><div class="bd">
+      ${donut(u.progress,Math.round(u.progress*100)+"%","umrimning")}
+      <div style="margin-top:14px">
+      ${barsH([{l:"Yashab oʻtgan yillar",v:yosh()},{l:"Qolgan yillar (reja)",v:u.qolganYil}],{fmt:intF})}
+      </div>
+      <div class="small muted center">Ajal Allohning ilmida — bu faqat reja va masʼuliyat oʻlchovi.</div>
+    </div></div></div>`;
+
+  h+=`<div class="grid g2">
+    <div class="card"><h3>🎯 Joriy davrlarning bosh maqsadlari</h3><div class="bd flush"><div class="tw"><table>
+      <tbody>
+      ${[["Bu hafta","hafta",haftaK],["Bu oy","oy",oyK],["Bu yil","yil",yilK],["Bu 10 yillik","d10",d10K]]
+        .map(([nm,tur,kk])=>{const g=davrBosh(tur,kk),p=davrFoiz(tur,kk);
+        return `<tr><td style="width:110px;font-weight:600">${nm}</td>
+          <td>${g?esc(g):`<span class="muted">— yozilmagan —</span>`}</td>
+          <td class="num" style="width:70px"><span class="pill ${p===null?"p-mut":p>=.8?"p-ok":p>=.4?"p-warn":"p-bad"}">${F(p)}</span></td></tr>`;}).join("")}
+      </tbody></table></div></div></div>
+    <div class="card"><h3>🕌 Oxirgi 30 kun — namoz</h3><div class="bd">${barsV(namoz30,{max:5,fmt:intF,color:"#9C6F19"})}</div></div>
+  </div>`;
+
+  h+=`<div class="card"><h3>📈 Oxirgi 30 kun — kunlik bajarilish</h3><div class="bd">
+      ${lineC(oxirgi30,{fmt:pctF,color:"#1B4332",max:1})}</div></div>`;
+
+  h+=`<div class="card"><h3>❓ Har kuni oʻzimga beradigan savollar</h3><div class="bd">
+    <ol style="margin:0;padding-left:20px;line-height:2;font-size:13.5px">
+    <li>Bugungi ishim Oliy Maqsadimga bir qadam yaqinlashtiradimi?</li>
+    <li>5 vaqt namozimni oʻz vaqtida oʻqidimmi?</li>
+    <li>Bugun ota-onam roziligi uchun nima qildim?</li>
+    <li>Agar bugun oxirgi kunim boʻlsa, ortimda nima qoldi?</li>
+    <li>Bugun oʻqigan kitobimdan nima oldim va qaysi yomon odatimga yon berdim?</li></ol></div></div>`;
+  return h;
+}
+
+/* ===================== 2. KUNLIK ISH ===================== */
+let kunLimit=7;
+function viewKun(){
+  const bug=iso(bugun());
+  let h=`<div class="note">Bugungi kun eng tepada. Har kuni avtomatik qoʻshiladi — faylni ochganingizda
+    yetishmagan kunlar oʻzi toʻldiriladi. Namoz qatorlari oltin rangda, BOSH maqsad ajratilgan.</div>`;
+  const kunlar=S.kunlar.slice(0,kunLimit);
+  kunlar.forEach((k,ki)=>{
+    const idx=S.kunlar.indexOf(k), f=kunFoiz(k), n=kunNamoz(k), st=kunStat(k);
+    const bugungi=k.sana===bug;
+    h+=`<div class="day${bugungi?" today":""}"><div class="dhead">
+      <div><div class="d1">${fmtUz(k.sana)}${bugungi?" · BUGUN":""}</div>
+      <div class="d2">${kunNomi(k.sana)}</div></div><div class="sp"></div>
+      <div class="mini">
+        <span class="pill p-gold">🕌 ${n} / 5</span>
+        <span class="pill ${st.baj===st.reja&&st.reja?"p-ok":"p-mut"}">${st.baj} / ${st.reja} amal</span>
+        <span class="pill ${f===null?"p-mut":f>=.8?"p-ok":f>=.4?"p-warn":"p-bad"}">${f===null?"—":Math.round(f*100)+"%"}</span>
+      </div></div>`;
+    k.rows.forEach((r,ri)=>{
+      const nom=amalNomi(r), takroriy=r.t==="Takroriy";
+      const cls=r.t==="Namoz"?"namoz":(r.t==="Maqsad"?(r.d==="Bosh maqsad"?"maqsad bosh":"maqsad"):"");
+      const tag=r.t==="Maqsad"?(r.d||"Maqsad").replace(" maqsad",""):r.t;
+      h+=`<div class="drow ${cls}">
+        <div class="tag">${esc(tag)}</div>
+        <div class="amal">${(r.t==="Namoz"||takroriy)
+          ?esc(nom)+(takroriy?` <span class="muted small">(takroriy)</span>`:"")
+          :`<textarea class="cellin" rows="1" placeholder="${r.t==="Maqsad"?"maqsadni yozing…":"vazifani yozing…"}"
+             oninput="S.kunlar[${idx}].rows[${ri}].x=this.value;tegildi();grow(this)">${esc(r.x)}</textarea>`}</div>
+        <div>${r.t==="Maqsad"
+          ?`<select class="cellin" onchange="S.kunlar[${idx}].rows[${ri}].d=this.value;tegildi();render()">
+             ${DARAJA.map(d=>`<option${d===r.d?" selected":""}>${d}</option>`).join("")}</select>`
+          :`<span class="muted small">${r.t==="Namoz"?"ibodat":"&nbsp;"}</span>`}</div>
+        <div><select class="cellin" onchange="S.kunlar[${idx}].rows[${ri}].st=this.value;tegildi();render()">
+          <option value="">— holat —</option>
+          ${HOLAT.map(x=>`<option${x===r.st?" selected":""}>${x}</option>`).join("")}</select></div>
+        <div>${r.st?`<span class="pill ${HOL_PILL[r.st]}" title="${esc(r.st)}">${HOL_SYM[r.st]}</span>`:""}</div>
+      </div>`;
+    });
+    h+=`<div class="dfoot">
+      <button class="btn sm" onclick="qoshVazifa(${idx});render()">+ vazifa qatori</button>
+      <button class="btn sm" onclick="qoshMaqsadQ(${idx});render()">+ maqsad qatori</button>
+    </div></div>`;
+  });
+  if(S.kunlar.length>kunLimit)
+    h+=`<div class="center"><button class="btn" onclick="kunLimit+=7;render()">Yana ${Math.min(7,S.kunlar.length-kunLimit)} kunni koʻrsatish (jami ${S.kunlar.length})</button></div>`;
+  return h;
+}
+function qoshVazifa(i){S.kunlar[i].rows.push({t:"Vazifa",d:"",x:"",st:"",izoh:""});tegildi();}
+function qoshMaqsadQ(i){S.kunlar[i].rows.unshift({t:"Maqsad",d:"Qoʻshimcha maqsad",x:"",st:"",izoh:""});tegildi();}
+
+/* ===================== 3. ODAT TREKKER ===================== */
+function viewTrk(){
+  const y=S.sozlama.trkYil;
+  const holatTop=(hi,dt)=>{const k=kunTop(iso(dt));if(!k)return"";
+    const r=k.rows.find(r=>r.t==="Takroriy"&&r.h===hi);return r?r.st:"";};
+  let h=`<div class="note">Bu jadvalga qoʻlda hech narsa yozilmaydi. «Kunlik ish»da holatni belgilasangiz —
+    shu yerdagi katak oʻzi rangga boʻyaladi. Nomni faqat shu yerda oʻzgartirasiz, hamma kunda oʻzgaradi.</div>`;
+  h+=`<div class="card"><h3>Takroriy vazifalarim<span class="hint">yil:</span>
+      <input class="inp" type="number" style="width:100px" value="${y}"
+        oninput="S.sozlama.trkYil=Number(this.value)||${y};tegildi();render()"></h3>
+    <div class="bd flush"><div class="tw"><table><thead><tr>
+      <th style="min-width:260px">Takroriy vazifa / odat</th><th style="width:130px">Oylik maqsad (kun)</th>
+      <th>Bu oy bajarildi</th><th>Foiz</th></tr></thead><tbody>`;
+  const oy=bugun().getMonth();
+  S.takroriy.forEach((tk,i)=>{
+    let baj=0;const kn=oyKunlari(y,oy);
+    for(let d=1;d<=kn;d++)if(holatTop(i,new Date(y,oy,d))==="Bajarildi")baj++;
+    const f=tk.maqsad?baj/tk.maqsad:0;
+    h+=`<tr><td>${inp("takroriy",i,"nom",tk.nom,"text")}</td>
+      <td class="num">${inp("takroriy",i,"maqsad",tk.maqsad,"num")}</td>
+      <td class="num">${tk.nom?`<b>${baj}</b>`:""}</td>
+      <td class="num">${tk.nom?`<span class="pill ${f>=.8?"p-ok":f>=.4?"p-warn":"p-mut"}">${Math.round(f*100)}%</span>`:""}</td></tr>`;
+  });
+  h+=`</tbody></table></div></div></div>`;
+
+  const joriyOy=bugun().getMonth();
+  h+=`<div class="card"><h3>${y}-yil — 12 oy</h3><div class="bd">
+    <div class="tabs" style="margin-bottom:12px">${OYLAR.map((o,m)=>
+      `<div class="tab ${m===joriyOy?"on":""}" onclick="document.getElementById('oy${m}').scrollIntoView({behavior:'smooth',block:'start'})">${o.slice(0,3)}</div>`).join("")}</div>
+    <div class="legend">${HOLAT.map(x=>`<span><i class="${HOL_CLS[x]}" style="background:${
+      {"Rejada":"#FDF3D3","Jarayonda":"#FBE7B0","Bajarildi":"#B7DFC0","Bajarilmadi":"#F6C6C0","Bekor qilindi":"#CBDFF0"}[x]
+    }"></i>${HOL_SYM[x]} ${x}</span>`).join("")}</div>`;
+  for(let m=0;m<12;m++){
+    const kn=oyKunlari(y,m);
+    h+=`<div class="mhead" id="oy${m}">${OYLAR[m]} ${y}${m===joriyOy?` <span class="pill p-gold">joriy oy</span>`:""}</div><div class="trk"><table class="trk-t"><thead><tr><th class="nm"></th>`;
+    for(let d=1;d<=kn;d++)h+=`<th>${d}</th>`;
+    h+=`<th style="padding-left:8px">Σ</th></tr></thead><tbody>`;
+    S.takroriy.forEach((tk,i)=>{
+      if(!tk.nom)return;
+      let baj=0;let cells="";
+      for(let d=1;d<=kn;d++){
+        const st=holatTop(i,new Date(y,m,d));
+        if(st==="Bajarildi")baj++;
+        cells+=`<td><div class="cell ${st?HOL_CLS[st]:"off"}" data-tip="${d}.${pad(m+1)} — ${esc(tk.nom)}: ${st||"belgilanmagan"}">${st?HOL_SYM[st]:""}</div></td>`;
+      }
+      h+=`<tr><td><div class="trk-name" title="${esc(tk.nom)}">${esc(tk.nom)}</div></td>${cells}
+          <td><div class="trk-tot"><b>${baj}</b>/${tk.maqsad||0}</div></td></tr>`;
+    });
+    h+=`</tbody></table></div>`;
+  }
+  return h+`</div></div>`;
+}
+
+/* ===================== 4. KUN KUNDALIGI ===================== */
+let jrLimit=10;
+function viewKundalik(){
+  let h=`<div class="note">Har kecha uxlashdan oldin 5–10 daqiqa. Yozilmagan kun — oʻtkazilgan kun.</div>`;
+  S.kundalik.slice(0,jrLimit).forEach((j,ix)=>{
+    const i=S.kundalik.indexOf(j),bug=j.sana===iso(bugun());
+    h+=`<div class="card"><h3>${bug?"🟡 ":""}${fmtUz(j.sana)} · ${kunNomi(j.sana)}
+      <span class="hint">kun bahom:</span>
+      <input class="inp" type="number" min="0" max="10" style="width:72px" value="${j.baho||""}"
+        oninput="S.kundalik[${i}].baho=Number(this.value)||0;tegildi()"></h3><div class="bd">
+      <div class="row2">
+        <div class="fld"><label>Bugungi eng yaxshi voqea</label>
+          <textarea class="inp" oninput="S.kundalik[${i}].yaxshi=this.value;tegildi()">${esc(j.yaxshi)}</textarea></div>
+        <div class="fld"><label>Shukr qilaman — 3 narsa</label>
+          <textarea class="inp" oninput="S.kundalik[${i}].shukr=this.value;tegildi()">${esc(j.shukr)}</textarea></div>
+        <div class="fld"><label>Bugun nima oʻrgandim</label>
+          <textarea class="inp" oninput="S.kundalik[${i}].organdim=this.value;tegildi()">${esc(j.organdim)}</textarea></div>
+        <div class="fld"><label>Xatolarim / afsuslarim</label>
+          <textarea class="inp" oninput="S.kundalik[${i}].xato=this.value;tegildi()">${esc(j.xato)}</textarea></div>
+        <div class="fld"><label>Ertaga nimani boshqacha qilaman</label>
+          <textarea class="inp" oninput="S.kundalik[${i}].ertaga=this.value;tegildi()">${esc(j.ertaga)}</textarea></div>
+        <div class="fld"><label>Oliy Maqsadga yaqinlashdimmi?</label>
+          <select class="inp" onchange="S.kundalik[${i}].yaqin=this.value;tegildi()">
+            <option value=""></option><option${j.yaqin==="Ha"?" selected":""}>Ha</option>
+            <option${j.yaqin==="Yoʻq"?" selected":""}>Yoʻq</option></select></div>
+      </div>
+      <div class="fld" style="margin-bottom:0"><label>Kun haqida erkin yozuv</label>
+        <textarea class="inp" style="min-height:90px" oninput="S.kundalik[${i}].erkin=this.value;tegildi()">${esc(j.erkin)}</textarea></div>
+    </div></div>`;
+  });
+  if(S.kundalik.length>jrLimit)
+    h+=`<div class="center"><button class="btn" onclick="jrLimit+=10;render()">Yana koʻrsatish (jami ${S.kundalik.length})</button></div>`;
+  return h;
+}
+
+/* ===================== 5. MAQSADLAR ===================== */
+let mqTab="yil";
+const MQ_NOM={d10:"10 yillik",yil:"Yillik",oy:"Oylik",hafta:"Haftalik"};
+function viewMaqsad(){
+  const dv=davrlar(mqTab);
+  let h=`<div class="tabs">${Object.keys(MQ_NOM).map(k=>
+    `<div class="tab ${k===mqTab?"on":""}" onclick="mqTab='${k}';render()">${MQ_NOM[k]}</div>`).join("")}</div>`;
+  h+=`<div class="note">Har davrga istalgancha maqsad qoʻshasiz — «+ maqsad» tugmasi. Foiz vaznga qarab
+      oʻzi hisoblanadi: bosh maqsad 4 ball, muhim 2, qoʻshimcha 1.</div>`;
+  const jamiF=[];
+  dv.forEach(d=>{const f=davrFoiz(mqTab,d.k);if(f!==null)jamiF.push({l:d.nom,s:d.nom.slice(0,7),v:f});});
+  if(jamiF.length)h+=`<div class="card"><h3>Davrlar boʻyicha bajarilish</h3><div class="bd">
+     ${barsV(jamiF,{fmt:pctF,max:1})}</div></div>`;
+  dv.forEach(d=>{
+    const g=S.maqsad[mqTab].map((x,i)=>({x,i})).filter(o=>o.x.davr===d.k);
+    const f=davrFoiz(mqTab,d.k);
+    h+=`<div class="card"><h3>${d.joriy?"🟡 ":""}${esc(d.nom)}
+      <span class="hint">${g.filter(o=>o.x.maqsad).length} ta maqsad</span>
+      <span class="pill ${f===null?"p-mut":f>=.8?"p-ok":f>=.4?"p-warn":"p-bad"}">${f===null?"—":Math.round(f*100)+"%"}</span>
+      <span style="flex:1"></span>
+      <button class="btn sm gold" onclick="qoshMaqsad('${mqTab}','${d.k}');render()">+ maqsad</button></h3>
+      <div class="bd flush"><div class="tw"><table><thead><tr>
+        <th style="width:170px">Daraja</th><th>MAQSAD</th><th style="width:150px">Holat</th>
+        <th style="min-width:200px">Izoh</th><th style="width:34px"></th></tr></thead><tbody>`;
+    if(!g.length)h+=`<tr><td colspan="5"><div class="empty">Hali maqsad yozilmagan — «+ maqsad»</div></td></tr>`;
+    g.forEach(({x,i})=>{
+      h+=`<tr${x.daraja==="Bosh maqsad"?' style="background:var(--gold-bg)"':x.holat==="Bajarildi"?' style="background:#F3FAF5"':''}>
+        <td><select class="cellin" onchange="S.maqsad['${mqTab}'][${i}].daraja=this.value;tegildi();render()">
+          ${DARAJA.map(o=>`<option${o===x.daraja?" selected":""}>${o}</option>`).join("")}</select></td>
+        <td><textarea class="cellin" rows="1" placeholder="maqsadni yozing…"
+            oninput="S.maqsad['${mqTab}'][${i}].maqsad=this.value;tegildi();grow(this)">${esc(x.maqsad)}</textarea></td>
+        <td><select class="cellin" onchange="S.maqsad['${mqTab}'][${i}].holat=this.value;tegildi();render()">
+          <option value="">— holat —</option>${HOLAT.map(o=>`<option${o===x.holat?" selected":""}>${o}</option>`).join("")}</select></td>
+        <td><textarea class="cellin" rows="1" oninput="S.maqsad['${mqTab}'][${i}].izoh=this.value;tegildi();grow(this)">${esc(x.izoh||"")}</textarea></td>
+        <td><button class="rowdel" onclick="ochirMaqsad('${mqTab}',${i})">×</button></td></tr>`;
+    });
+    h+=`</tbody></table></div></div></div>`;
+  });
+  return h;
+}
+function qoshMaqsad(tur,davr){
+  const bor=S.maqsad[tur].filter(x=>x.davr===davr).length;
+  const dj=bor===0?"Bosh maqsad":bor<=2?"Muhim maqsad":"Qoʻshimcha maqsad";
+  S.maqsad[tur].push({davr,daraja:dj,maqsad:"",holat:"",izoh:""});tegildi();
+}
+function ochirMaqsad(tur,i){if(!confirm("Shu maqsadni oʻchirasizmi?"))return;S.maqsad[tur].splice(i,1);tegildi();render();}
+
+/* ===================== 6. OLIY MAQSAD ===================== */
+function viewOliy(){
+  const ta=(k,lab,hint,ph)=>`<div class="fld"><label>${lab}${hint?` <span class="hint">${hint}</span>`:""}</label>
+    <textarea class="inp" placeholder="${esc(ph||"")}" oninput="setf('oliy','${k}',this.value)">${esc(S.oliy[k])}</textarea></div>`;
+  let h=`<div class="card"><h3>1. Niyatim va Oliy Maqsadim<span class="hint">tizimning yuragi</span></h3><div class="bd">
+    ${ta("niyat","NIYATIM","nima uchun yashayman?","Masalan: Rabbimning roziligi uchun, insonlarga foyda keltirib yashash va ortimdan uzilmas savob qoldirish.")}
+    ${ta("maqsad","SHAXSIY OLIY MAQSADIM","bir jumlada","Bitta jumla. Butun umringiz shu jumlaga xizmat qiladi.")}
+    <div class="row2">${ta("missiya","Missiyam","nima qilaman")}${ta("shior","Hayot shiorim","")}</div></div></div>`;
+
+  h+=`<div class="card"><h3>2. Oʻzimdan keyin nima qoldiraman — merosim</h3><div class="bd flush"><div class="tw">
+    <table><thead><tr><th style="width:230px">Meros turi</th><th>Aniq nima qoldiraman</th><th>Buning uchun nima qilaman</th></tr></thead><tbody>
+    ${S.oliy.meros.map((r,i)=>`<tr><td><b>${esc(r[0])}</b></td>
+      <td><textarea class="cellin" rows="1" oninput="S.oliy.meros[${i}][1]=this.value;tegildi();grow(this)">${esc(r[1])}</textarea></td>
+      <td><textarea class="cellin" rows="1" oninput="S.oliy.meros[${i}][2]=this.value;tegildi();grow(this)">${esc(r[2])}</textarea></td></tr>`).join("")}
+    </tbody></table></div></div></div>`;
+
+  h+=`<div class="card"><h3>3. Vafotimdan keyin men haqimda nima deyishlarini istayman</h3><div class="bd flush"><div class="tw">
+    <table><thead><tr><th style="width:190px">Kim</th><th>Ular aytishini istagan gapim</th><th>Buning uchun bugundan nima qilaman</th></tr></thead><tbody>
+    ${S.oliy.vafot.map((r,i)=>`<tr><td><b>${esc(r[0])}</b></td>
+      <td><textarea class="cellin" rows="1" oninput="S.oliy.vafot[${i}][1]=this.value;tegildi();grow(this)">${esc(r[1])}</textarea></td>
+      <td><textarea class="cellin" rows="1" oninput="S.oliy.vafot[${i}][2]=this.value;tegildi();grow(this)">${esc(r[2])}</textarea></td></tr>`).join("")}
+    </tbody></table></div></div></div>`;
+
+  h+=`<div class="card"><h3>4. Oʻn niyatim<span class="hint">hayotimda albatta amalga oshiradigan ishlarim</span></h3>
+    <div class="bd flush"><div class="tw"><table><thead><tr><th style="width:44px">№</th><th>Niyatim</th>
+    <th style="width:210px">Qaysi soha</th><th style="width:150px">Qachon (reja)</th></tr></thead><tbody>
+    ${S.oliy.niyatlar.map((r,i)=>`<tr><td class="num">${i+1}</td>
+      <td><textarea class="cellin" rows="1" oninput="S.oliy.niyatlar[${i}][0]=this.value;tegildi();grow(this)">${esc(r[0])}</textarea></td>
+      <td><select class="cellin" onchange="S.oliy.niyatlar[${i}][1]=this.value;tegildi()"><option value=""></option>
+        ${SOHA.map(s=>`<option${s===r[1]?" selected":""}>${s}</option>`).join("")}</select></td>
+      <td><input class="cellin" value="${esc(r[2])}" oninput="S.oliy.niyatlar[${i}][2]=this.value;tegildi()"></td></tr>`).join("")}
+    </tbody></table></div></div></div>`;
+  return h;
+}
+
+/* ===================== 7. QADRIYATLAR ===================== */
+function viewQadr(){
+  const bal=S.qadr.umumiy.filter(q=>q.nom).map(q=>({l:q.nom,v:q.baho||0}));
+  let h=tableCard("Umumiy qadriyatlarim","hamma bilan munosabatda","qadr.umumiy",
+    [{k:"nom",t:"Qadriyat",w:180},{k:"tarif",t:"Men uchun taʼrifi",type:"ta",w:260},
+     {k:"amal",t:"Har kuni qanday amal qilaman",type:"ta",w:260},{k:"baho",t:"Bahom (1-10)",type:"num",w:100}],{add:1});
+  h+=tableCard("Xususiy qadriyatlarim","faqat menga xos","qadr.xususiy",
+    [{k:"nom",t:"Qadriyat",w:180},{k:"tarif",t:"Taʼrifi",type:"ta",w:260},
+     {k:"amal",t:"Qanday himoya qilaman",type:"ta",w:260},{k:"baho",t:"Bahom (1-10)",type:"num",w:100}],{add:1});
+  h+=tableCard("Qizil chiziqlar","men hech qachon qilmayman","qadr.qizil",
+    [{k:"nom",t:"Hech qachon qilmayman",w:240},{k:"nega",t:"Nega",type:"ta",w:260},
+     {k:"kafforat",t:"Agar buzsam — kafforat",type:"ta",w:240}],{add:1});
+  if(bal.length)h+=`<div class="card"><h3>Qadriyatlarim bahosi</h3><div class="bd">${barsH(bal,{max:10,fmt:v=>v+"/10"})}</div></div>`;
+  return h;
+}
+
+/* ===================== 8-16. JADVALLI BOʻLIMLAR ===================== */
+function viewInson(){
+  return `<div class="note">Insonlar bilan aloqa — rejalashtiriladigan narsa. Unutmaslik uchun yozing.</div>`+
+  tableCard("Hayotimdagi eng muhim insonlar","","insonlar",
+    [{k:"ism",t:"Ism",w:150},{k:"kim",t:"Kim boʻladi",w:120},{k:"nega",t:"Nega muhim",type:"ta",w:230},
+     {k:"masul",t:"Mening masʼuliyatim",type:"ta",w:230},{k:"chast",t:"Aloqa chastotasi",type:"sel",opts:ALOQA,w:130},
+     {k:"oxirgi",t:"Oxirgi aloqa",type:"date",w:130},{k:"duo",t:"Ular uchun duom",type:"ta",w:190}],{add:1});
+}
+function viewOtaona(){
+  let h=`<div class="card"><h3>Ota-onamning orzulari<span class="hint">oʻzidan soʻrab, aynan ularning soʻzlari bilan yozing</span></h3>
+    <div class="bd"><div class="row2">
+    <div class="fld"><label>Otamning orzulari</label><textarea class="inp" style="min-height:100px"
+      oninput="setf('otaona','ota',this.value)">${esc(S.otaona.ota)}</textarea></div>
+    <div class="fld"><label>Onamning orzulari</label><textarea class="inp" style="min-height:100px"
+      oninput="setf('otaona','ona',this.value)">${esc(S.otaona.ona)}</textarea></div></div>
+    <div class="fld" style="margin-bottom:0"><label>Har kuni ular uchun qiladigan amalim</label>
+      <textarea class="inp" oninput="setf('otaona','kunlik',this.value)">${esc(S.otaona.kunlik)}</textarea></div>
+    </div></div>`;
+  return h+tableCard("Orzularni amalga oshirish rejasi","","otaona.reja",
+    [{k:"orzu",t:"Orzu",type:"ta",w:240},{k:"kim",t:"Kimniki",type:"sel",opts:["Otam","Onam","Ikkalasi"],w:110},
+     {k:"nima",t:"Nima qilishim kerak",type:"ta",w:280},
+     {k:"bosqich",t:"Bosqich",type:"sel",opts:["Har kunlik","Har haftalik","Har oylik","Har yillik","Umr davomida"],w:130},
+     {k:"holat",t:"Holat",type:"sel",opts:HOLAT,w:130},{k:"foiz",t:"Bajarilish %",type:"num",w:100}],{add:1});
+}
+function viewYaxshi(){
+  const y=S.sozlama.trkYil,oy=bugun().getMonth();
+  let rows="";
+  S.takroriy.forEach((tk,i)=>{
+    if(!tk.nom)return;
+    let baj=0;const kn=oyKunlari(y,oy);
+    for(let d=1;d<=kn;d++){const k=kunTop(iso(new Date(y,oy,d)));
+      if(k&&k.rows.find(r=>r.t==="Takroriy"&&r.h===i&&r.st==="Bajarildi"))baj++;}
+    const f=tk.maqsad?baj/tk.maqsad:0;
+    rows+=`<tr><td><b>${esc(tk.nom)}</b></td>
+      <td><textarea class="cellin" rows="1" oninput="S.yaxshi[${i}].sabab=this.value;tegildi();grow(this)">${esc(S.yaxshi[i]?.sabab||"")}</textarea></td>
+      <td><textarea class="cellin" rows="1" oninput="S.yaxshi[${i}].trigger=this.value;tegildi();grow(this)">${esc(S.yaxshi[i]?.trigger||"")}</textarea></td>
+      <td class="num">${baj} / ${tk.maqsad}</td>
+      <td class="num"><span class="pill ${f>=.8?"p-ok":f>=.4?"p-warn":"p-mut"}">${Math.round(f*100)}%</span></td></tr>`;
+  });
+  return `<div class="note">Odat nomi va raqamlar «Odat trekker»dan avtomatik keladi. Bu yerda odatning
+    SABABI va qoʻzgʻatuvchisi yoziladi. Odat oʻrtacha 66 kunda mustahkamlanadi.</div>
+    <div class="card"><h3>Shakllantiradigan odatlarim<span class="hint">${OYLAR[oy]} ${y}</span></h3>
+    <div class="bd flush"><div class="tw"><table><thead><tr><th style="min-width:220px">Odat</th>
+    <th style="min-width:250px">Qaysi maqsad / qadriyat uchun</th><th style="min-width:230px">Qoʻzgʻatuvchi (qachon, qayerda)</th>
+    <th>Bu oy</th><th>Foiz</th></tr></thead><tbody>${rows||`<tr><td colspan="5"><div class="empty">«Odat trekker»da vazifa nomlarini yozing</div></td></tr>`}</tbody></table></div></div></div>`
+    +tableCard("Tark etadigan odatlarim","yomon odat oʻrniga yaxshisini qoʻying","yomon",
+    [{k:"nom",t:"Yomon odat",w:190},{k:"zarar",t:"Menga zarari",type:"ta",w:230},
+     {k:"trigger",t:"Qoʻzgʻatuvchi",type:"ta",w:200},{k:"orniga",t:"Oʻrniga nima qilaman",type:"ta",w:230},
+     {k:"boshlagan",t:"Tark etgan sanam",type:"date",w:140},{k:"jazo",t:"Agar qaytsam — kafforatim",type:"ta",w:220},
+     {k:"holat",t:"Holat",type:"sel",opts:HOLAT,w:130}],{add:1});
+}
+function viewIlm(){
+  return `<div class="note">Har bir ilm — Oliy Maqsadga eltuvchi qadam. Aloqasi boʻlmasa, u ilm sizga hozir kerak emas.</div>`+
+  tableCard("Oliy Maqsadimga kerak boʻladigan ilmlar","","ilm",
+    [{k:"nom",t:"Ilm / koʻnikma",w:170},{k:"nega",t:"Oliy Maqsadimga aloqasi",type:"ta",w:260},
+     {k:"manba",t:"Manba (kitob, kurs)",type:"ta",w:200},{k:"ustoz",t:"Ustoz",w:130},
+     {k:"hozir",t:"Hozirgi darajam",type:"sel",opts:BILIM,w:140},{k:"maqsad",t:"Maqsad darajam",type:"sel",opts:BILIM,w:140},
+     {k:"foiz",t:"Oʻzlashtirish %",type:"num",w:110},{k:"holat",t:"Holat",type:"sel",opts:HOLAT,w:130}],{add:1});
+}
+function viewKitob(){
+  const st=KITOB_H.map(x=>({l:x,v:S.kitob.filter(k=>k.holat===x).length}));
+  const oq=S.kitob.filter(k=>k.holat==="Oʻqib tugatildi");
+  let h=`<div class="grid g2">
+    <div class="card"><h3>Kitoblar holati</h3><div class="bd">${barsH(st,{fmt:intF})}</div></div>
+    <div class="card"><h3>Xulosa</h3><div class="bd">
+      ${barsH([{l:"Oʻqib tugatildi",v:oq.length},
+               {l:"Taqriz yozilgan",v:S.kitob.filter(k=>k.taqriz).length},
+               {l:"Oʻqilgan sahifa",v:oq.reduce((a,b)=>a+(Number(b.sahifa)||0),0)}],{fmt:intF})}
+    </div></div></div>`;
+  return h+`<div class="note">«Hayotimga qanday tatbiq qilaman» ustuni eng muhimi — tatbiq yozilmagan kitob oʻqilmagan hisoblanadi.</div>`+
+  tableCard("Kitoblar va taqrizlarim","","kitob",
+    [{k:"nom",t:"Kitob nomi",w:190},{k:"muallif",t:"Muallif",w:150},
+     {k:"nega",t:"Nima uchun oʻqiyman",type:"ta",w:220},{k:"sahifa",t:"Sahifa",type:"num",w:80},
+     {k:"holat",t:"Holat",type:"sel",opts:KITOB_H,w:150},{k:"baho",t:"Bahom",type:"num",w:80},
+     {k:"fikr",t:"Asosiy 3 fikr",type:"ta",w:250},{k:"taqriz",t:"TAQRIZIM",type:"ta",w:300},
+     {k:"tatbiq",t:"Hayotimga qanday tatbiq qilaman",type:"ta",w:250}],{add:1});
+}
+function viewTanish(){
+  return `<div class="note">Kim bilan tanishsangiz — oʻsha yoʻlga kirasiz. Tanishuvni ham rejalashtiring.</div>`+
+  tableCard("Tanishishim kerak boʻlgan insonlar","","tanish",
+    [{k:"ism",t:"Ism / kim",w:170},{k:"soha",t:"Sohasi",type:"sel",opts:SOHA,w:190},
+     {k:"nega",t:"Nega tanishmoqchiman",type:"ta",w:250},{k:"qanday",t:"Qanday tanishaman",type:"ta",w:250},
+     {k:"sana",t:"Reja sanasi",type:"date",w:140},{k:"holat",t:"Holat",type:"sel",opts:HOLAT,w:130},
+     {k:"qadam",t:"Keyingi qadam",type:"ta",w:200}],{add:1});
+}
+function viewFarzand(){
+  let h=`<div class="card"><h3>Tarbiya falsafam</h3><div class="bd"><div class="fld" style="margin-bottom:0">
+    <label>Farzandimni qanday tarbiyalayman? Qanday inson boʻlishini istayman?</label>
+    <textarea class="inp" style="min-height:100px" oninput="setf('farzand','falsafa',this.value)">${esc(S.farzand.falsafa)}</textarea>
+    </div></div></div>`;
+  h+=tableCard("Farzandimda koʻrishni istagan sifatlar","","farzand.sifat",
+    [{k:"nom",t:"Sifat",w:180},{k:"nega",t:"Nega muhim",type:"ta",w:230},
+     {k:"ornak",t:"Men qanday oʻrnak boʻlaman",type:"ta",w:250},{k:"qanday",t:"Qanday singdiraman",type:"ta",w:250}],{add:1});
+  h+=tableCard("Yosh bosqichlari boʻyicha reja","","farzand.bosqich",
+    [{k:"yosh",t:"Yosh davri",w:110,ro:1},{k:"vazifa",t:"Asosiy vazifa",type:"ta",w:200},
+     {k:"manaviy",t:"Maʼnaviy tarbiya",type:"ta",w:200},{k:"ilm",t:"Ilm va taʼlim",type:"ta",w:200},
+     {k:"axloq",t:"Axloq va odob",type:"ta",w:200},{k:"jismoniy",t:"Jismoniy va sogʻliq",type:"ta",w:200}]);
+  h+=tableCard("Buning uchun BUGUNDAN nima qilaman","","farzand.hozir",
+    [{k:"nima",t:"Nima qilaman",type:"ta",w:300},{k:"nega",t:"Nega kerak",type:"ta",w:230},
+     {k:"qachon",t:"Qachondan",type:"date",w:140},{k:"holat",t:"Holat",type:"sel",opts:HOLAT,w:130}],{add:1});
+  return h;
+}
+function viewMukofot(){
+  return `<div class="note">Miya mukofot va oqibatga javob beradi. Shartni oldindan yozib qoʻying — keyin bahona qolmaydi.
+    Jazo oʻzingizni yerga urish emas, foydali kafforat boʻlsin: sadaqa, qoʻshimcha mehnat, erta turish.</div>`+
+  tableCard("Mukofot va jazo tizimim","","mukofot",
+    [{k:"daraja",t:"Daraja",type:"sel",opts:["Kunlik","Haftalik","Oylik","Yillik","10 yillik","Umr"],w:130},
+     {k:"shart",t:"Shart — nima bajarilsa",type:"ta",w:280},{k:"mukofot",t:"Mukofotim",type:"ta",w:230},
+     {k:"jazo",t:"Bajarilmasa — kafforat",type:"ta",w:260},{k:"holat",t:"Holat",type:"sel",opts:HOLAT,w:130}],{add:1});
+}
+
+/* ===================== 17. STATISTIKA ===================== */
+function viewStat(){
+  const u=umrHisob();
+  const o30=[],n30=[],b30=[];
+  for(let i=29;i>=0;i--){const s=iso(addDays(bugun(),-i)),k=kunTop(s),j=S.kundalik.find(x=>x.sana===s);
+    const lbl=fmtUz(s),sh=pad(parseISO(s).getDate());
+    o30.push({l:lbl,s:sh,v:kunFoiz(k)??0});n30.push({l:lbl,s:sh,v:kunNamoz(k)});
+    b30.push({l:lbl,s:sh,v:j?.baho||0});}
+  const holStat=HOLAT.map(x=>({l:x,v:S.kunlar.reduce((a,k)=>a+k.rows.filter(r=>r.t!=="Namoz"&&amalNomi(r)&&r.st===x).length,0),
+    color:{"Rejada":"#B9C3BC","Jarayonda":"#C9A227","Bajarildi":"#1B4332","Bajarilmadi":"#A5322B","Bekor qilindi":"#4A7FB5"}[x]}));
+  const namozStat=HOLAT.map(x=>({l:x,v:S.kunlar.reduce((a,k)=>a+k.rows.filter(r=>r.t==="Namoz"&&r.st===x).length,0)}));
+  const y=S.sozlama.trkYil,oy=bugun().getMonth();
+  const odat=S.takroriy.map((tk,i)=>{if(!tk.nom)return null;let b=0;
+    for(let d=1;d<=oyKunlari(y,oy);d++){const k=kunTop(iso(new Date(y,oy,d)));
+      if(k&&k.rows.find(r=>r.t==="Takroriy"&&r.h===i&&r.st==="Bajarildi"))b++;}
+    return {l:tk.nom,v:b};}).filter(Boolean);
+  const soha=SOHA.map((s,i)=>({l:s,v:S.sozlama.soha[i]||0}));
+  const yil=davrlar("yil").slice(0,10).map(d=>({l:d.nom,s:d.nom.slice(0,4),v:davrFoiz("yil",d.k)??0}));
+  const oyF=davrlar("oy").slice(0,12).map(d=>({l:d.nom,s:d.nom.slice(0,3),v:davrFoiz("oy",d.k)??0}));
+
+  const jamiAmal=S.kunlar.reduce((a,k)=>a+k.rows.filter(r=>r.t!=="Namoz"&&amalNomi(r)).length,0);
+  const jamiBaj=holStat.find(x=>x.l==="Bajarildi").v;
+  const namozBaj=namozStat.find(x=>x.l==="Bajarildi").v;
+  const ort=arr=>arr.length?arr.reduce((a,b)=>a+b.v,0)/arr.length:0;
+
+  let h=`<div class="kpis">
+    <div class="kpi"><div class="k">Jami amallar</div><div class="v">${jamiAmal}</div><div class="n">${jamiBaj} bajarildi</div></div>
+    <div class="kpi"><div class="k">Bajarilish ulushi</div><div class="v">${jamiAmal?Math.round(jamiBaj/jamiAmal*100):0}%</div><div class="n">butun davr</div></div>
+    <div class="kpi"><div class="k">Oʻqilgan namoz</div><div class="v">${namozBaj}</div><div class="n">jami</div></div>
+    <div class="kpi"><div class="k">Oʻrtacha namoz</div><div class="v">${(ort(n30)).toFixed(1)}</div><div class="n">30 kunda, 5 dan</div></div>
+    <div class="kpi"><div class="k">Oʻrtacha kun bahom</div><div class="v">${(ort(b30.filter(x=>x.v))).toFixed(1)}</div><div class="n">30 kunda, 10 dan</div></div>
+    <div class="kpi"><div class="k">Kundalik yozuvlari</div><div class="v">${S.kundalik.filter(j=>j.erkin||j.shukr).length}</div><div class="n">kun</div></div></div>`;
+
+  h+=`<div class="grid g2">
+    <div class="card"><h3>Umr taqsimoti</h3><div class="bd">${donut(u.progress,Math.round(u.progress*100)+"%","umrimning")}
+      <div style="margin-top:12px">${barsH([{l:"Yashab oʻtgan haftalar",v:u.otganHafta},{l:"Qolgan haftalar",v:u.qolganHafta}],{fmt:intF})}</div></div></div>
+    <div class="card"><h3>Amallar holati boʻyicha</h3><div class="bd">${barsH(holStat,{fmt:intF})}
+      <div class="small muted">Har qatorda holat nomi yozilgan — rang yolgʻiz maʼno tashimaydi.</div></div></div></div>`;
+
+  h+=`<div class="card"><h3>Oxirgi 30 kun — kunlik bajarilish</h3><div class="bd">${lineC(o30,{fmt:pctF,color:"#1B4332",max:1})}</div></div>
+      <div class="grid g2">
+      <div class="card"><h3>Oxirgi 30 kun — namoz (5 dan)</h3><div class="bd">${barsV(n30,{max:5,fmt:intF,color:"#9C6F19"})}</div></div>
+      <div class="card"><h3>Oxirgi 30 kun — kun bahom (10 dan)</h3><div class="bd">${barsV(b30,{max:10,fmt:intF,color:"#2D6A4F"})}</div></div></div>`;
+
+  h+=`<div class="grid g2">
+      <div class="card"><h3>Yillik maqsadlar bajarilishi</h3><div class="bd">${barsV(yil,{fmt:pctF,max:1})}</div></div>
+      <div class="card"><h3>Oylik bajarilish</h3><div class="bd">${barsV(oyF,{fmt:pctF,max:1,color:"#40916C"})}</div></div></div>`;
+
+  h+=`<div class="grid g2">
+      <div class="card"><h3>Odatlar — ${OYLAR[oy]} oyida bajarilgan kunlar</h3><div class="bd">${barsH(odat,{fmt:intF,color:"#74A892"})}</div></div>
+      <div class="card"><h3>Hayot sohalari balansi<span class="hint">oʻz bahom (Sozlamalarda)</span></h3>
+        <div class="bd">${barsH(soha,{max:10,fmt:v=>v+"/10",color:"#40916C"})}</div></div></div>`;
+  return h;
+}
+
+/* ===================== 18. SOZLAMALAR ===================== */
+function viewSozlama(){
+  const u=umrHisob();
+  let h=`<div class="grid g2"><div class="card"><h3>Shaxsiy maʼlumotlar</h3><div class="bd">
+    <div class="fld"><label>Ism-familiyam</label><input class="inp" value="${esc(S.sozlama.ism)}"
+      oninput="setf('sozlama','ism',this.value);document.getElementById('brandSub').textContent=this.value"></div>
+    <div class="fld"><label>Tugʻilgan sanam <span class="hint">barcha yosh hisoblari shunga bogʻliq</span></label>
+      <input class="inp" type="date" value="${S.sozlama.tug}" oninput="setf('sozlama','tug',this.value);render()"></div>
+    <div class="fld" style="margin-bottom:0"><label>Rejalashtirilgan umr (yil)
+      <span class="hint">reja uchun oʻlchov — ajal Allohning ilmida</span></label>
+      <input class="inp" type="number" value="${S.sozlama.umr}"
+        oninput="S.sozlama.umr=Number(this.value)||80;tegildi();render()"></div>
+    </div></div>
+    <div class="card"><h3>Umr hisobi</h3><div class="bd flush"><table><tbody>
+    ${[["Yoshim (toʻliq yil)",yosh()],["Yashab oʻtgan kunlarim",u.otgan.toLocaleString("ru-RU")],
+       ["Yashab oʻtgan haftalarim",u.otganHafta.toLocaleString("ru-RU")],
+       ["Qolgan kunlar (reja)",u.qolganKun.toLocaleString("ru-RU")],
+       ["Qolgan haftalar",u.qolganHafta.toLocaleString("ru-RU")],["Qolgan yillar",u.qolganYil],
+       ["Umr progressi",Math.round(u.progress*1000)/10+"%"]]
+      .map(r=>`<tr><td>${r[0]}</td><td class="num"><b>${r[1]}</b></td></tr>`).join("")}
+    </tbody></table></div></div></div>`;
+
+  h+=`<div class="card"><h3>Hayot sohalari — oʻzimga bergan bahom (1-10)</h3><div class="bd flush"><table><tbody>
+    ${SOHA.map((s,i)=>`<tr><td style="width:260px">${s}</td>
+      <td style="width:120px"><input class="cellin" type="number" min="0" max="10" style="text-align:center"
+        value="${S.sozlama.soha[i]}" oninput="S.sozlama.soha[${i}]=Number(this.value)||0;tegildi()"></td>
+      <td><div class="bar-track" style="margin:0"><div class="bar-fill" style="width:${(S.sozlama.soha[i]||0)*10}%"></div></div></td></tr>`).join("")}
+    </tbody></table></div></div>`;
+
+  h+=`<div class="card"><h3>Maʼlumotlarni saqlash</h3><div class="bd">
+    <p class="small muted" style="margin-top:0">Bu ilova maʼlumotni brauzerda saqlamaydi — barchasi bitta
+    <b>.json</b> faylda turadi. Ishingizni tugatgach «💾 Saqlash» tugmasini bosing: fayl kompyuteringizga
+    yuklanadi. Keyingi safar ilovani ochib «📂 Yuklash» orqali oʻsha faylni tanlaysiz. Shu tufayli
+    maʼlumotingiz faqat sizda qoladi va uni istalgan qurilmaga koʻchira olasiz.</p>
+    <div style="display:flex;gap:9px;flex-wrap:wrap">
+      <button class="btn pri" onclick="exportData()">💾 Faylga saqlash</button>
+      <button class="btn" onclick="importData()">📂 Fayldan yuklash</button>
+      <button class="btn ghost" onclick="if(confirm('Hamma maʼlumot oʻchadi. Davom etasizmi?')){S=bosh();kunlarniTola();render();}">↺ Boshidan boshlash</button>
+    </div></div></div>`;
+  return h;
+}
+
+/* ===================== 19. QOʻLLANMA ===================== */
+function viewQollanma(){
+  const sec=(t,items)=>`<div class="card"><h3>${t}</h3><div class="bd flush"><table><tbody>
+    ${items.map(i=>`<tr><td style="width:210px;font-weight:600;vertical-align:top">${i[0]}</td><td>${i[1]}</td></tr>`).join("")}
+    </tbody></table></div></div>`;
+  return `<div class="note">Bir marta oʻqing — keyin faqat «Boshqaruv» va «Kunlik ish» bilan ishlaysiz.</div>`+
+  sec("Boshlash — 5 daqiqa",[
+    ["1-qadam","«Sozlamalar»da ism va tugʻilgan sanani tekshiring."],
+    ["2-qadam","«Oliy Maqsad»ni toʻldiring. Shoshilmang — bir kun oʻylang. U yozilmasa qolgani maʼnosini yoʻqotadi."],
+    ["3-qadam","«Qadriyatlar», «Muhim insonlar», «Ota-ona orzusi»ni toʻldiring."],
+    ["4-qadam","«Maqsadlar» → 10 yillik → Yillik → Oylik → Haftalik tartibida tushing."],
+    ["5-qadam","«Odat trekker»da takroriy vazifalar roʻyxatini oʻzingizga moslang."]])+
+  sec("Har kungi ritm",[
+    ["Ertalab (10 daq)","«Boshqaruv»da Oliy Maqsadingizni oʻqing → «Kunlik ish»da bugungi bosh va muhim maqsadlarni yozing, vazifalarni namoz bloklariga taqsimlang."],
+    ["Kun davomida","Har ishni bajarganingizda «Holat»ni belgilang. Shu zahoti trekker, statistika va boshqaruv oʻzi qayta hisoblanadi."],
+    ["Kechqurun (10 daq)","«Kun kundaligi»ga yozing: kun bahosi, shukr, nima oʻrgandim, xatolarim, ertaga nimani boshqacha."]])+
+  sec("Nima nimaga bogʻlangan",[
+    ["Kunlik ish → Odat trekker","Takroriy vazifa holati trekker katagini avtomatik rangga boʻyaydi."],
+    ["Odat trekker → Yaxshi odatlar","Odat nomi va oylik foiz avtomatik keladi."],
+    ["Kunlik ish → Statistika","Namoz, bajarilgan amallar, foiz — hammasi oʻzi yigʻiladi."],
+    ["Kun kundaligi → Statistika","Kun bahosi 30 kunlik grafikka tushadi."]])+
+  sec("Muhim qoidalar",[
+    ["1 + 2 + 4","Har davrda faqat 1 ta BOSH maqsad. Ikkita bosh maqsad — bitta ham bosh maqsad yoʻq degani."],
+    ["Vaznlar","Bosh maqsad 4 ball, muhim 2, qoʻshimcha 1. «Bajarildi» — toʻliq, «Jarayonda» — yarim ball."],
+    ["Yangi kun","Avtomatik. Ilovani ochganingizda yetishmagan kunlar oʻzi qoʻshiladi."],
+    ["Saqlash","Ish tugagach «💾 Saqlash» — .json fayl yuklanadi. Keyingi safar «📂 Yuklash»."]]);
+}
+
+/* ===================== NAVIGATSIYA ===================== */
+const NAV=[
+  {g:"Kundalik ish",items:[
+    {k:"dash",n:"Boshqaruv",ic:"◈",f:viewDash,s:"Bugungi holat va umumiy koʻrinish"},
+    {k:"kun",n:"Kunlik ish",ic:"☀",f:viewKun,s:"Namoz, maqsad, takroriy vazifa va ishlarim"},
+    {k:"trk",n:"Odat trekker",ic:"▦",f:viewTrk,s:"12 oy — avtomatik toʻladi"},
+    {k:"jrn",n:"Kun kundaligi",ic:"✎",f:viewKundalik,s:"Kun tugagach yoziladi"}]},
+  {g:"Maqsadlar",items:[
+    {k:"mq",n:"Maqsadlar",ic:"◎",f:viewMaqsad,s:"10 yillik → yillik → oylik → haftalik"},
+    {k:"oliy",n:"Oliy Maqsad",ic:"★",f:viewOliy,s:"Nima uchun yashayman?"},
+    {k:"qadr",n:"Qadriyatlar",ic:"❖",f:viewQadr,s:"Har qarorda tayanadigan mezonim"}]},
+  {g:"Insonlar",items:[
+    {k:"ins",n:"Muhim insonlar",ic:"♡",f:viewInson,s:"Aloqa — rejalashtiriladigan narsa"},
+    {k:"ota",n:"Ota-ona orzusi",ic:"⌂",f:viewOtaona,s:"Ularning roziligi — Rabbning roziligi"},
+    {k:"tan",n:"Tanishuvlar",ic:"⇄",f:viewTanish,s:"Kim bilan tanishsangiz — oʻsha yoʻlga kirasiz"},
+    {k:"far",n:"Farzand tarbiyasi",ic:"⚘",f:viewFarzand,s:"Eng katta sadaqai jariya"}]},
+  {g:"Oʻsish",items:[
+    {k:"odat",n:"Odatlar",ic:"⟳",f:viewYaxshi,s:"Shakllantiraman va tark etaman"},
+    {k:"ilm",n:"Ilmlar",ic:"✦",f:viewIlm,s:"Oliy Maqsadga eltuvchi bilimlar"},
+    {k:"kit",n:"Kitoblar",ic:"▤",f:viewKitob,s:"Roʻyxat va taqrizlarim"},
+    {k:"muk",n:"Mukofot va Jazo",ic:"⚖",f:viewMukofot,s:"Shartni oldindan yozib qoʻying"}]},
+  {g:"Tizim",items:[
+    {k:"stat",n:"Statistika",ic:"▲",f:viewStat,s:"Hamma raqam avtomatik"},
+    {k:"soz",n:"Sozlamalar",ic:"⚙",f:viewSozlama,s:"Shaxsiy maʼlumot va umr hisobi"},
+    {k:"help",n:"Qoʻllanma",ic:"?",f:viewQollanma,s:"Tizim qanday ishlaydi"}]}
+];
+let cur="dash";
+function go(k){cur=k;document.getElementById("side").classList.remove("open");
+  window.scrollTo(0,0);render();}
+function render(){
+  const nav=document.getElementById("nav");
+  nav.innerHTML=NAV.map(g=>`<div class="grp">${g.g}</div>`+g.items.map(it=>
+    `<a class="${it.k===cur?"on":""}" onclick="go('${it.k}')"><span class="ic">${it.ic}</span>${it.n}</a>`).join("")).join("");
+  const it=NAV.flatMap(g=>g.items).find(x=>x.k===cur);
+  document.getElementById("pgTitle").textContent=it.n;
+  document.getElementById("pgSub").textContent=it.s||"";
+  const v=document.getElementById("view");
+  v.innerHTML=it.f();
+  autoGrow(v);hookTips(v);
+}
+
+/* ===================== SAQLASH / YUKLASH ===================== */
+function exportData(){
+  const blob=new Blob([JSON.stringify(S,null,1)],{type:"application/json"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download=`hayot-strategiyam-${iso(bugun())}.json`;
+  a.click();URL.revokeObjectURL(a.href);tozalandi();
+}
+function importData(){document.getElementById("fileIn").click();}
+document.getElementById("fileIn").addEventListener("change",e=>{
+  const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=()=>{try{
+      const d=JSON.parse(r.result);
+      if(!d.sozlama||!d.kunlar)throw 0;
+      S=Object.assign(bosh(),d);
+      kunlarniTola();tozalandi();render();
+      alert("Maʼlumot yuklandi.");
+    }catch(err){alert("Fayl notoʻgʻri — bu ilova saqlagan .json fayl boʻlishi kerak.");}};
+  r.readAsText(f);e.target.value="";
+});
+window.addEventListener("beforeunload",e=>{if(dirty){e.preventDefault();e.returnValue="";}});
+
+/* ===================== ISHGA TUSHIRISH ===================== */
+kunlarniTola();
+document.getElementById("brandSub").textContent=S.sozlama.ism;
+render();
+</script>
+</body>
+</html>

@@ -4,5 +4,6 @@ const root = path.resolve(__dirname, '..');
 const output = path.join(root, 'public');
 fs.mkdirSync(output, { recursive: true });
 fs.copyFileSync(path.join(root, 'index.html'), path.join(output, 'index.html'));
+fs.copyFileSync(path.join(root, 'Hayot Strategiyam.html'), path.join(output, 'Hayot Strategiyam.html'));
 fs.cpSync(path.join(root, 'assets'), path.join(output, 'assets'), { recursive: true });
 console.log('Static site built in public/. API keys and server code are not published.');

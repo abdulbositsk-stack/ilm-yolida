@@ -29,7 +29,7 @@ const server = http.createServer(async (req, res) => {
     res.writeHead(response.status, Object.fromEntries(response.headers)); res.end(await response.text()); return;
   }
   const relative = pathname === '/' ? 'index.html' : pathname.slice(1);
-  if (relative !== 'index.html' && !/^assets\/[a-z0-9-]+\.(png|mp3|js)$/i.test(relative)) {
+  if (!['index.html', 'Hayot Strategiyam.html'].includes(relative) && !/^assets\/[a-z0-9-]+\.(png|mp3|js)$/i.test(relative)) {
     res.writeHead(404).end('Not found'); return;
   }
   const file = path.join(root, relative);

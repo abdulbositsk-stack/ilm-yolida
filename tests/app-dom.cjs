@@ -53,7 +53,10 @@ const blobText = blob => new Promise((resolve, reject) => { const reader = new w
   click('#welcome-4 button');
   assert.equal(w.getComputedStyle(byId('welcome')).display, 'none');
   assert(!/\.welcome\s*\{[^}]*display\s*:\s*grid\s*!important/.test(source), 'CSS must not force onboarding visible');
-  assert(byId('main').textContent.includes('48 soat'), 'Podcast starts only after explicit confirmation');
+  assert(byId('main').textContent.includes('Ustozlar davrasi'), 'Program portal starts after explicit confirmation');
+  click('#nav-podcasts'); type('ustozlar-invite-code', 'Ilm_yolida');
+  d.querySelector('.invite-form').dispatchEvent(new w.Event('submit', { bubbles: true, cancelable: true }));
+  assert(byId('main').textContent.includes('48 soat'), 'Podcast opens after a valid invite code');
   click('[onclick="setPodcastSchedule()"]');
   assert(byId('main').querySelector('iframe'));
 
@@ -121,7 +124,28 @@ const blobText = blob => new Promise((resolve, reject) => { const reader = new w
   click('[onclick="setWritingTab(\'notes\')"]');
   assert(byId('main').textContent.includes('Remember this'));
 
-  click('#nav-podcasts'); click('[onclick="openTest()"]');
+  click('#nav-books');
+  click('.program-welcome-primary');
+  click('.program-welcome-primary');
+  type('program-access-code', '0405');
+  d.querySelector('.invite-form').dispatchEvent(new w.Event('submit', { bubbles: true, cancelable: true }));
+  type('book-title', 'Small steps'); type('book-author', 'A writer'); type('book-pages', '120');
+  d.querySelector('#main .module-form').dispatchEvent(new w.Event('submit', { bubbles: true, cancelable: true }));
+  assert.equal(read('books').length, 1);
+  click('#nav-notebook');
+  w.enterProgram();
+  type('knowledge-title', 'Daily learning'); type('knowledge-text', 'Write one useful idea every day.'); type('knowledge-tags', 'habit, learning');
+  d.querySelector('#main .module-form').dispatchEvent(new w.Event('submit', { bubbles: true, cancelable: true }));
+  assert.equal(read('knowledge-notes').length, 1);
+  click('#nav-plans');
+  w.enterProgram();
+  type('goal-title', 'Read every day'); type('goal-why', 'Build a lifelong habit');
+  d.querySelector('#main .module-form').dispatchEvent(new w.Event('submit', { bubbles: true, cancelable: true }));
+  assert.equal(read('learning-goals').length, 1);
+
+  click('#nav-podcasts');
+  w.enterProgram();
+  click('[onclick="openTest()"]');
   click('[onclick="submitTest()"]');
   assert(byId('main').querySelector('.question'), 'Unanswered quiz must stay open');
   const answers = w.eval('tests[state.active].questions.map(q=>q[2])');
@@ -154,6 +178,9 @@ const blobText = blob => new Promise((resolve, reject) => { const reader = new w
   click('#nav-settings'); click('[onclick="exportData()"]');
   const backup = JSON.parse(await blobText(downloaded));
   assert.equal(backup.notes.length, 1);
+  assert.equal(backup.books.length, 1);
+  assert.equal(backup.knowledgeNotes.length, 1);
+  assert.equal(backup.learningGoals.length, 1);
   assert.equal(backup.studyVideo.id, id);
   assert.throws(() => w.validateBackup({ ...backup, notes: [null] }));
   assert.throws(() => w.validateBackup({ ...backup, completed: { [id]: { score: 90 } } }));
@@ -177,7 +204,7 @@ const blobText = blob => new Promise((resolve, reject) => { const reader = new w
   assert.equal(read('notes').length, 1);
   await importBackup(backup);
   assert.equal(read('notes').length, 1);
-  assert(byId('podcast-video'));
+  assert(byId('main').textContent.includes('Ustozlar davrasi'));
   click('#nav-settings');
   await importBackup({ ...backup, notes: [null] });
   assert.equal(read('notes').length, 1, 'Invalid import preserves data');
@@ -227,12 +254,9 @@ const blobText = blob => new Promise((resolve, reject) => { const reader = new w
     });
     assert.deepEqual(reloadErrors, []);
     const welcome = reload.window.document.getElementById('welcome');
-    assert.equal(reload.window.getComputedStyle(welcome).display, 'grid', 'Every new browser session must require the password');
+    assert.equal(reload.window.getComputedStyle(welcome).display, blocked ? 'grid' : 'none', 'Returning participants reach the open program portal without a global password');
     if (!blocked) {
-      const password = reload.window.document.getElementById('access-password');
-      password.value = 'Ilm_yolida';
-      reload.window.unlockIlmYolida();
-      assert.equal(reload.window.getComputedStyle(welcome).display, 'none', 'Returning participant skips onboarding after password');
+      assert(reload.window.document.getElementById('main').textContent.includes('Ustozlar davrasi'));
       assert.equal(reload.window.document.getElementById('profile-name').textContent, 'Returning User');
     }
     reload.window.close();

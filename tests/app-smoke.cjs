@@ -56,7 +56,7 @@ assert(element('welcome-4').classList.contains('active'));
 element('agree').checked = true;
 run('enterApp()');
 assert.equal(element('welcome').style.display, 'none');
-assert(element('main').innerHTML.includes('podcast-video'));
+assert(element('main').innerHTML.includes('Ustozlar davrasi'));
 run("openSection('study')");
 assert(element('main').innerHTML.includes('study-url'));
 element('study-url').value = 'https://youtu.be/Nc7Oe_oDC58';
