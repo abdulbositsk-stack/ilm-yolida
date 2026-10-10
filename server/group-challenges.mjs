@@ -26,7 +26,7 @@ async function readGroup(value, store) {
   if (!group) throw [404, 'Challenge kodi topilmadi.'];
   return group;
 }
-const publicGroup = group => ({ ...group, members: group.members.map(({ id, name, pages, days, logs }) => ({ id, name, pages, days, logs })) });
+const publicGroup = group => ({ ...group, posts: Array.isArray(group.posts) ? group.posts : [], members: group.members.map(({ id, name, pages, days }) => ({ id, name, pages, days })) });
 
 export async function createGroup(input, store = groupStore()) {
   const name = clean(input.name), ownerName = clean(input.ownerName, 60), book = input.book || {};
@@ -36,7 +36,7 @@ export async function createGroup(input, store = groupStore()) {
   let inviteCode, result;
   for (let i = 0; i < 4; i++) {
     inviteCode = code();
-    const group = { id: randomUUID(), code: inviteCode, name, book: { title, author, cover: clean(book.cover, 250000) }, days, dailyPages, createdAt: new Date().toISOString(), members: [{ id: randomUUID(), name: ownerName, pages: 0, days: 0, logs: [] }] };
+    const group = { id: randomUUID(), code: inviteCode, name, book: { title, author, cover: clean(book.cover, 250000) }, days, dailyPages, createdAt: new Date().toISOString(), posts: [], members: [{ id: randomUUID(), name: ownerName, pages: 0, days: 0, logs: [] }] };
     result = await store.setJSON(key(inviteCode), group, { onlyIfNew: true });
     if (result.modified) return { group: publicGroup(group), memberId: group.members[0].id };
   }
@@ -61,6 +61,21 @@ export async function logProgress(inviteCode, input, store = groupStore()) {
   member.logs.unshift({ day, pages, note, createdAt: new Date().toISOString() });
   member.pages = member.logs.reduce((sum, item) => sum + item.pages, 0);
   member.days = member.logs.length;
+  if (input.shareNote === true) {
+    group.posts = Array.isArray(group.posts) ? group.posts : [];
+    group.posts.unshift({ id: randomUUID(), memberId: member.id, name: member.name, kind: 'qayd', text: note, createdAt: new Date().toISOString() });
+    group.posts = group.posts.slice(0, 100);
+  }
+  await store.setJSON(key(inviteCode), group);
+  return { group: publicGroup(group) };
+}
+export async function addPost(inviteCode, input, store = groupStore()) {
+  const group = await readGroup(inviteCode, store), member = group.members.find(item => item.id === clean(input.memberId, 80));
+  const text = clean(input.text, 2000), kind = input.kind === 'iqtibos' ? 'iqtibos' : 'qayd';
+  if (!member || !text) throw [400, 'Ulashish uchun matn yozing.'];
+  group.posts = Array.isArray(group.posts) ? group.posts : [];
+  group.posts.unshift({ id: randomUUID(), memberId: member.id, name: member.name, kind, text, createdAt: new Date().toISOString() });
+  group.posts = group.posts.slice(0, 100);
   await store.setJSON(key(inviteCode), group);
   return { group: publicGroup(group) };
 }
@@ -72,6 +87,7 @@ export async function groupApi(request, inviteCode = '', store = groupStore()) {
     if (!inviteCode) return json(await createGroup(input, store), 201);
     if (input.action === 'join') return json(await joinGroup(inviteCode, input, store));
     if (input.action === 'progress') return json(await logProgress(inviteCode, input, store));
+    if (input.action === 'post') return json(await addPost(inviteCode, input, store));
     return json({ error: 'Noma’lum amal.' }, 400);
   } catch (error) {
     const [status, message] = Array.isArray(error) ? error : [500, 'Guruh challenge xizmatida xatolik.'];

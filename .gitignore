@@ -4,3 +4,4 @@ public/
 .env.*
 !.env.example
 .netlify/
+assets/supabase-config.js
