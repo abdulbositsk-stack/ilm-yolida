@@ -134,6 +134,19 @@ const blobText = blob => new Promise((resolve, reject) => { const reader = new w
   click('[data-mobile-nav="insights"]');
   click('[onclick="setWritingTab(\'notes\')"]');
   assert(byId('main').textContent.includes('Remember this'));
+  const editNote = [...byId('main').querySelectorAll('.writing-actions button')].find(button => button.textContent.includes('Tahrirlash'));
+  assert(editNote, 'Saved note has an edit control');
+  editNote.click();
+  assert.equal(byId('writing-editor-text').value, read('notes')[0].text);
+  type('writing-editor-text', 'Updated note');
+  click('#writing-editor-backdrop .primary');
+  assert.equal(read('notes')[0].text, 'Updated note', 'Editing a saved note persists the replacement text');
+  const updatedNote = read('notes')[0];
+  const deleteNote = [...byId('main').querySelectorAll('.writing-actions button')].find(button => button.textContent.includes('O‘chirish'));
+  assert(deleteNote, 'Saved note has a delete control');
+  deleteNote.click();
+  assert.equal(read('notes').length, 0, 'Deleting a saved note removes it from storage');
+  w.localStorage.setItem('ilm-yolida-notes', JSON.stringify([updatedNote]));
 
   click('#nav-books');
   click('.program-welcome-primary');
