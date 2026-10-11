@@ -147,6 +147,17 @@ const blobText = blob => new Promise((resolve, reject) => { const reader = new w
   deleteNote.click();
   assert.equal(read('notes').length, 0, 'Deleting a saved note removes it from storage');
   w.localStorage.setItem('ilm-yolida-notes', JSON.stringify([updatedNote]));
+  w.localStorage.setItem('ilm-yolida-quotes', JSON.stringify([{ text: 'Legacy public quote', podcastId: 'Nc7Oe_oDC58' }]));
+  click("[onclick=\"setWritingTab('quotes')\"]");
+  const legacyEdit = [...byId('main').querySelectorAll('.writing-actions button')].find(button => button.textContent.includes('Tahrirlash'));
+  legacyEdit.click();
+  type('writing-editor-text', 'Updated legacy quote');
+  click('#writing-editor-backdrop .primary');
+  assert.equal(read('quotes')[0].text, 'Updated legacy quote', 'A legacy quote without createdAt remains editable');
+  const legacyDelete = [...byId('main').querySelectorAll('.writing-actions button')].find(button => button.textContent.includes('O‘chirish'));
+  legacyDelete.click();
+  assert.equal(read('quotes').length, 0, 'A legacy quote without createdAt remains deletable');
+  w.localStorage.setItem('ilm-yolida-quotes', JSON.stringify([{ id: 'quote-test', text: 'Restored quote', podcastId: 'Nc7Oe_oDC58', createdAt: new Date().toISOString() }]));
 
   click('#nav-books');
   click('.program-welcome-primary');
