@@ -1,5 +1,5 @@
 import { randomUUID, createHmac, timingSafeEqual } from 'node:crypto';
-import { getStore } from '@netlify/blobs';
+import { persistentStore } from './blob-store.mjs';
 import { generateQuiz, validateInput, QuizError } from './quiz-service.mjs';
 
 export function memoryStore() {
@@ -13,7 +13,7 @@ export function memoryStore() {
 }
 const localStore = memoryStore();
 export function jobStore() {
-  return process.env.ILM_LOCAL_DEV === 'true' ? localStore : getStore({ name: 'ilm-quiz-jobs', consistency: 'strong' });
+  return process.env.ILM_LOCAL_DEV === 'true' ? localStore : persistentStore('ilm-quiz-jobs');
 }
 export function json(data, status = 200) { return Response.json(data, { status, headers: { 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' } }); }
 export function apiError(error) { return json({ error: error instanceof QuizError ? error.message : 'Test xizmatida xatolik. Keyinroq urinib ko‘ring.', code: error instanceof QuizError ? error.code : 'server_error' }, error instanceof QuizError ? error.status : 500); }

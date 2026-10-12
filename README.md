@@ -28,14 +28,26 @@ npm start
 
 Then open `http://127.0.0.1:4174`.
 
-## Deploy
+## Deploy to Vercel
 
-Netlify uses the included configuration:
+Import this repository into Vercel. The included `vercel.json` sets the build
+command to `npm run build`, serves `public`, configures the quiz API duration,
+and schedules expired quiz cleanup.
 
-- Build command: `npm run build`
-- Publish directory: `public`
+After importing the project:
 
-Pushes to the `main` branch automatically deploy the latest version to Netlify.
+1. Create a **private Vercel Blob** store and connect it to this project. Vercel
+   uses the connected store for group challenges and quiz jobs.
+2. Add `OPENAI_API_KEY`, `SUPADATA_API_KEY`, and `CRON_SECRET` in the Vercel
+   project's Environment Variables. `SUPADATA_API_KEY` is only needed for
+   automatic transcript mode. `CRON_SECRET` should be a random secret.
+3. Deploy the project. Local preview with Vercel's environment uses
+   `vercel dev` after linking the project and pulling its environment variables.
+
+The existing Netlify deployment can remain available while the Vercel version
+is configured. Vercel Blob starts with empty group and quiz storage; existing
+Netlify Blob records are not copied automatically. Participant notes and
+progress stored in their browsers remain in those browsers.
 
 ## Checks
 

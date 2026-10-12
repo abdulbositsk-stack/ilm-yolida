@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { getStore } from '@netlify/blobs';
+import { persistentStore } from './blob-store.mjs';
 import { memoryStore } from './quiz-jobs.mjs';
 
 const localStore = memoryStore();
@@ -9,7 +9,7 @@ const safeNumber = (value, max) => Math.max(1, Math.min(max, Number.parseInt(val
 
 export const groupStore = () => process.env.ILM_LOCAL_DEV === 'true'
   ? localStore
-  : getStore({ name: 'ilm-group-challenges', consistency: 'strong' });
+  : persistentStore('ilm-group-challenges');
 export const json = (data, status = 200) => Response.json(data, { status, headers: { 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' } });
 const code = () => 'ILM-' + Math.random().toString(36).slice(2, 7).toUpperCase().replace(/[^A-Z0-9]/g, 'X');
 const key = value => 'group/' + value;
