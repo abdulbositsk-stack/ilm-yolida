@@ -10,7 +10,7 @@
   "crons": [
     {
       "path": "/api/quiz-cleanup",
-      "schedule": "0 * * * *"
+      "schedule": "0 0 * * *"
     }
   ]
 }
