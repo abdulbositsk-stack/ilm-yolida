@@ -26,7 +26,7 @@ async function readGroup(value, store) {
   if (!group) throw [404, 'Challenge kodi topilmadi.'];
   return group;
 }
-const publicGroup = group => ({ ...group, posts: Array.isArray(group.posts) ? group.posts : [], members: group.members.map(({ id, name, pages, days }) => ({ id, name, pages, days })) });
+const publicGroup = group => ({ ...group, posts: Array.isArray(group.posts) ? group.posts : [], messages: Array.isArray(group.messages) ? group.messages.slice(-100) : [], members: group.members.map(({ id, name, pages, days }) => ({ id, name, pages, days })) });
 
 export async function createGroup(input, store = groupStore()) {
   const name = clean(input.name), ownerName = clean(input.ownerName, 60), book = input.book || {};
@@ -36,7 +36,7 @@ export async function createGroup(input, store = groupStore()) {
   let inviteCode, result;
   for (let i = 0; i < 4; i++) {
     inviteCode = code();
-    const group = { id: randomUUID(), code: inviteCode, name, book: { title, author, cover: clean(book.cover, 250000) }, days, dailyPages, createdAt: new Date().toISOString(), posts: [], members: [{ id: randomUUID(), name: ownerName, pages: 0, days: 0, logs: [] }] };
+    const group = { id: randomUUID(), code: inviteCode, name, book: { title, author, cover: clean(book.cover, 250000) }, days, dailyPages, createdAt: new Date().toISOString(), posts: [], messages: [], members: [{ id: randomUUID(), name: ownerName, pages: 0, days: 0, logs: [] }] };
     result = await store.setJSON(key(inviteCode), group, { onlyIfNew: true });
     if (result.modified) return { group: publicGroup(group), memberId: group.members[0].id };
   }
@@ -79,6 +79,16 @@ export async function addPost(inviteCode, input, store = groupStore()) {
   await store.setJSON(key(inviteCode), group);
   return { group: publicGroup(group) };
 }
+export async function addMessage(inviteCode, input, store = groupStore()) {
+  const group = await readGroup(inviteCode, store), member = group.members.find(item => item.id === clean(input.memberId, 80));
+  const text = clean(input.text, 1000);
+  if (!member || !text) throw [400, 'Xabar yozing.'];
+  group.messages = Array.isArray(group.messages) ? group.messages : [];
+  group.messages.push({ id: randomUUID(), memberId: member.id, name: member.name, text, createdAt: new Date().toISOString() });
+  group.messages = group.messages.slice(-100);
+  await store.setJSON(key(inviteCode), group);
+  return { group: publicGroup(group) };
+}
 export async function groupApi(request, inviteCode = '', store = groupStore()) {
   try {
     if (request.method === 'GET') return json({ group: publicGroup(await readGroup(inviteCode, store)) });
@@ -88,6 +98,7 @@ export async function groupApi(request, inviteCode = '', store = groupStore()) {
     if (input.action === 'join') return json(await joinGroup(inviteCode, input, store));
     if (input.action === 'progress') return json(await logProgress(inviteCode, input, store));
     if (input.action === 'post') return json(await addPost(inviteCode, input, store));
+    if (input.action === 'message') return json(await addMessage(inviteCode, input, store));
     return json({ error: 'Noma’lum amal.' }, 400);
   } catch (error) {
     const [status, message] = Array.isArray(error) ? error : [500, 'Guruh challenge xizmatida xatolik.'];
