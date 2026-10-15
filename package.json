@@ -7,10 +7,12 @@
     "start": "node scripts/serve.cjs"
   },
   "devDependencies": {
+    "esbuild": "^0.28.2",
     "jsdom": "^26.1.0"
   },
   "dependencies": {
     "@netlify/blobs": "^11.1.2",
+    "@supabase/supabase-js": "^2.117.3",
     "@vercel/blob": "^2.8.1",
     "@vercel/functions": "^3.9.11"
   }
