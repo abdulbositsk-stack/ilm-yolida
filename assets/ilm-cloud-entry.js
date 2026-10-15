@@ -186,6 +186,11 @@ const cloud = {
     await syncAfterAuth(result.data.user);
     return result.data.user;
   },
+  async signInWithGoogle() {
+    if (!client) throw new Error('Akkaunt sinxroni hali sozlanmagan.');
+    const result = await client.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin } });
+    if (result.error) throw result.error;
+  },
   signOut: async () => {
     if (client) { const result = await client.auth.signOut(); if (result.error) throw result.error; }
     await syncAfterAuth(null);
@@ -463,7 +468,7 @@ function authControls() {
 }
 function authDialog() {
   if (document.getElementById('ilm-cloud-auth-dialog')) return;
-  document.body.insertAdjacentHTML('beforeend', `<dialog id="ilm-cloud-auth-dialog" class="ilm-cloud-dialog"><form id="ilm-cloud-auth-form" method="dialog"><button class="ilm-cloud-close" type="button" onclick="document.getElementById('ilm-cloud-auth-dialog').close()" aria-label="Yopish">×</button><span class="ilm-cloud-kicker">ILM YO‘LIDA · SHAXSIY AKKAUNT</span><h2 id="ilm-cloud-auth-title">Akkauntga kirish</h2><p>Kitob javoningiz va yozuvlaringiz hisobingiz bilan birga saqlanadi.</p><label id="ilm-cloud-name-label">Ismingiz<input name="name" autocomplete="name" maxlength="80" placeholder="Ism Familiya"></label><label>Email<input name="email" type="email" autocomplete="email" required></label><label>Parol<input name="password" type="password" autocomplete="current-password" minlength="8" required></label><small id="ilm-cloud-auth-status" role="status"></small><button class="book-primary" id="ilm-cloud-auth-submit" type="submit">Kirish</button><button class="ilm-cloud-switch" id="ilm-cloud-auth-switch" type="button">Akkaunt yaratish</button></form></dialog>`);
+  document.body.insertAdjacentHTML('beforeend', `<dialog id="ilm-cloud-auth-dialog" class="ilm-cloud-dialog"><form id="ilm-cloud-auth-form" method="dialog"><button class="ilm-cloud-close" type="button" onclick="document.getElementById('ilm-cloud-auth-dialog').close()" aria-label="Yopish">×</button><span class="ilm-cloud-kicker">ILM YO‘LIDA · SHAXSIY AKKAUNT</span><h2 id="ilm-cloud-auth-title">Akkauntga kirish</h2><p>Kitob javoningiz va yozuvlaringiz hisobingiz bilan birga saqlanadi.</p><label id="ilm-cloud-name-label">Ismingiz<input name="name" autocomplete="name" maxlength="80" placeholder="Ism Familiya"></label><label>Email<input name="email" type="email" autocomplete="email" required></label><label>Parol<input name="password" type="password" autocomplete="current-password" minlength="8" required></label><small id="ilm-cloud-auth-status" role="status"></small><button class="book-primary" id="ilm-cloud-auth-submit" type="submit">Kirish</button><button class="ilm-cloud-google" id="ilm-cloud-auth-google" type="button">Google bilan davom etish</button><button class="ilm-cloud-switch" id="ilm-cloud-auth-switch" type="button">Akkaunt yaratish</button></form></dialog>`);
   const dialog = document.getElementById('ilm-cloud-auth-dialog'), form = document.getElementById('ilm-cloud-auth-form');
   let mode = 'signin';
   const updateMode = () => {
@@ -475,6 +480,11 @@ function authDialog() {
     showStatus('');
   };
   document.getElementById('ilm-cloud-auth-switch').addEventListener('click', () => { mode = mode === 'signin' ? 'signup' : 'signin'; updateMode(); });
+  document.getElementById('ilm-cloud-auth-google').addEventListener('click', async () => {
+    showStatus('Google’ga ulanmoqda…');
+    try { await cloud.signInWithGoogle(); }
+    catch (error) { showStatus(error.message || 'Google orqali kirib bo‘lmadi.', true); }
+  });
   form.addEventListener('submit', async event => {
     event.preventDefault();
     const submit = document.getElementById('ilm-cloud-auth-submit');
@@ -528,6 +538,7 @@ function mountAccountControls() {
 function addCloudStyles() {
   if (document.getElementById('ilm-cloud-styles')) return;
   document.head.insertAdjacentHTML('beforeend', `<style id="ilm-cloud-styles">.ilm-cloud-account-slot{margin-left:auto;align-self:flex-start}.ilm-cloud-account{display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid #d9e7df;border-radius:12px;background:#fff;color:#36574a;font-size:.74rem}.ilm-cloud-account>span{max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ilm-cloud-account>span i{display:inline-block;width:7px;height:7px;margin-right:5px;border-radius:50%;background:#25a269}.ilm-cloud-account button{border:0;border-radius:8px;padding:7px 10px;background:#176246;color:#fff;font-family:inherit;font-size:.72rem;font-weight:700;cursor:pointer}.ilm-cloud-unavailable{max-width:280px;background:#fff8e8;border-color:#eadcae;color:#80641b}.ilm-cloud-dialog{width:min(94vw,440px);padding:0;border:0;border-radius:22px;box-shadow:0 25px 90px #092a1c55}.ilm-cloud-dialog::backdrop{background:#092a1c99;backdrop-filter:blur(4px)}.ilm-cloud-dialog form{position:relative;display:grid;gap:12px;padding:28px}.ilm-cloud-dialog h2{margin:0;color:#174c3d;font:800 1.5rem Georgia}.ilm-cloud-dialog p{margin:0 0 4px;color:#688075;line-height:1.5}.ilm-cloud-dialog label{display:grid;gap:6px;color:#426659;font-size:.78rem;font-weight:750}.ilm-cloud-dialog input{width:100%;padding:11px 12px;border:1px solid #d8e5dd;border-radius:10px;font:inherit}.ilm-cloud-kicker{color:#b08427;font-size:.67rem;font-weight:900;letter-spacing:.12em}.ilm-cloud-close{position:absolute;right:16px;top:14px;border:0;background:none;color:#60766b;font-size:1.5rem;cursor:pointer}.ilm-cloud-switch{border:0;background:none;color:#176246;font-family:inherit;font-size:.8rem;font-weight:700;cursor:pointer}.ilm-cloud-dialog [role=status]{min-height:1.1em;color:#39705d;font-size:.77rem}.ilm-cloud-dialog [role=status].error{color:#a63131}@media(max-width:650px){.ilm-cloud-account-slot{width:100%;margin:10px 0 0}.ilm-cloud-account{justify-content:space-between}.ilm-cloud-account>span{max-width:56vw}}</style>`);
+  document.head.insertAdjacentHTML('beforeend', `<style>.ilm-cloud-google{width:100%;padding:10px;border:1px solid #d4ded8;border-radius:10px;background:#fff;color:#315748;font-family:inherit;font-size:.82rem;font-weight:750;cursor:pointer}.ilm-cloud-google:hover{background:#f3f8f4}</style>`);
 }
 const observeMain = () => {
   const main = document.getElementById('main');
