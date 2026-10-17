@@ -87,3 +87,36 @@ test('worker failure is visible with manual fallback and no transcript disclosur
   await runJob(job.id,{store,env,generate:async()=>{throw new QuizError('unavailable','Matnni joylang.',422);}});
   const result=await getJob(job.id,{store});assert.equal(result.status,'failed');assert.equal(result.error,'Matnni joylang.');assert.equal(result.input,undefined);
 });
+
+test('Gemini key is used first and its structured reply is validated', async () => {
+  const calls = [];
+  const geminiEnv = { GEMINI_API_KEY: 'test-gemini', OPENAI_API_KEY: 'test-openai' };
+  const quiz = await generateQuiz(textInput, { env: geminiEnv, fetcher: async (url, options) => { calls.push({ url, options, body: JSON.parse(options.body) }); return response({ candidates: [{ finishReason: 'STOP', content: { parts: [{ text: JSON.stringify(fixtureQuiz()) }] } }] }); } });
+  assert.equal(calls.length, 1); assert(calls[0].url.includes('generativelanguage.googleapis.com')); assert(calls[0].url.includes('gemini-3.8-flash'));
+  assert.equal(calls[0].options.headers['x-goog-api-key'], 'test-gemini');
+  assert(!JSON.stringify(calls[0].body.generationConfig.responseJsonSchema).includes('additionalProperties'));
+  assert.equal(quiz.questions.length, 8);
+  await assert.rejects(generateQuiz(textInput, { env: geminiEnv, fetcher: async () => response({ candidates: [{ finishReason: 'MAX_TOKENS', content: { parts: [] } }] }) }), { code: 'incomplete' });
+  await assert.rejects(generateQuiz(textInput, { env: geminiEnv, fetcher: async () => response({ promptFeedback: { blockReason: 'SAFETY' } }) }), { code: 'refused' });
+  await assert.rejects(generateQuiz(textInput, { env: geminiEnv, fetcher: async () => response({ error: { message: 'API key not valid' } }, 400) }), { code: 'service_unavailable' });
+  const tried = [];
+  const fallback = await generateQuiz(textInput, { env: geminiEnv, fetcher: async url => { tried.push(url); return tried.length === 1 ? response({ error: { status: 'UNAVAILABLE' } }, 503) : response({ candidates: [{ finishReason: 'STOP', content: { parts: [{ text: JSON.stringify(fixtureQuiz()) }] } }] }); } });
+  assert.equal(tried.length, 2); assert(tried[1].includes('gemini-3.5-flash')); assert.equal(fallback.questions.length, 8);
+  const store = memoryStore(); let launched;
+  const job = await startJob(textInput, { store, env: { GEMINI_API_KEY: 'test-gemini' }, launch: async (id, sig) => { launched = sig; } });
+  assert(validSignature(job.id, launched, 'test-gemini'));
+});
+
+test('without Supadata, Gemini transcribes the YouTube video before writing the quiz', async () => {
+  const calls = [], stages = [];
+  const reply = text => response({ candidates: [{ finishReason: 'STOP', content: { parts: [{ text }] } }] });
+  const quiz = await generateQuiz({ mode: 'auto', videoId }, { env: { GEMINI_API_KEY: 'test-gemini' }, onStage: async s => stages.push(s), fetcher: async (url, options) => {
+    calls.push(JSON.parse(options.body)); return calls.length === 1 ? reply(transcript) : reply(JSON.stringify(fixtureQuiz()));
+  } });
+  assert.equal(calls[0].contents[0].parts[0].fileData.fileUri, 'https://www.youtube.com/watch?v=' + videoId);
+  assert(calls[1].contents[0].parts[0].text.includes('Har kuni ozgina'));
+  assert.deepEqual(stages, ['transcript', 'questions']); assert.equal(quiz.source, 'transcript');
+  await assert.rejects(generateQuiz({ mode: 'auto', videoId }, { env: { GEMINI_API_KEY: 'k' }, fetcher: async () => reply('  ') }), { code: 'transcript_unavailable' });
+  const job = await startJob({ mode: 'auto', videoId }, { store: memoryStore(), env: { GEMINI_API_KEY: 'k' }, launch: async () => {} });
+  assert.equal(job.status, 'queued');
+});

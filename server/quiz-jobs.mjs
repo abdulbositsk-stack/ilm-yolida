@@ -1,6 +1,6 @@
 import { randomUUID, createHmac, timingSafeEqual } from 'node:crypto';
 import { persistentStore } from './blob-store.mjs';
-import { generateQuiz, validateInput, QuizError } from './quiz-service.mjs';
+import { generateQuiz, validateInput, QuizError, quizProvider, quizSecret, canAutoTranscribe } from './quiz-service.mjs';
 
 export function memoryStore() {
   const data = new Map();
@@ -36,10 +36,10 @@ export async function readJobInput(request) {
 }
 export async function startJob(input, { store = jobStore(), env = process.env, launch, now = Date.now } = {}) {
   input = validateInput(input);
-  if (!env.OPENAI_API_KEY || (input.mode === 'auto' && !env.SUPADATA_API_KEY)) throw new QuizError('not_configured', 'AI test xizmati hali ulanmagan. Administrator xizmatni yoqishi kerak.', 503);
+  if (!quizProvider(env) || (input.mode === 'auto' && !canAutoTranscribe(env))) throw new QuizError('not_configured', 'AI test xizmati hali ulanmagan. Administrator xizmatni yoqishi kerak.', 503);
   const id = randomUUID(), createdAt = now(), expiresAt = createdAt + 3600000;
   await store.setJSON('job/' + id, { id, input, createdAt, expiresAt, status: 'queued', stage: input.mode === 'auto' ? 'transcript' : 'questions', videoId: input.videoId }, { metadata: { expiresAt } });
-  try { await launch(id, signJob(id, env.OPENAI_API_KEY)); }
+  try { await launch(id, signJob(id, quizSecret(env))); }
   catch { await store.delete('job/' + id); throw new QuizError('launch_failed', 'Testni boshlash imkoni bo‘lmadi. Qayta urinib ko‘ring.', 503); }
   return { id, status: 'queued', videoId: input.videoId };
 }
