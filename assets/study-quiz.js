@@ -3,7 +3,7 @@ const studyQuizUI = { token: 0, timer: null, busy: false, error: '', stage: '', 
 const studyQuizLabels = { queued: 'Navbatda…', transcript: 'YouTube transkripti qidirilmoqda…', audio: 'Transkript topilmadi. Video audiosi matnga aylantirilmoqda…', questions: '8 ta test va 2 ta xulosa savoli o‘zbek tilida tayyorlanmoqda…' };
 function quizMap(key) { const value = storage.get(key, {}); return value && typeof value === 'object' && !Array.isArray(value) ? value : {}; }
 function validStudyQuiz(quiz) {
-  return quiz && /^[A-Za-z0-9_-]{11}$/.test(quiz.videoId || '') && typeof quiz.title === 'string' && typeof quiz.videoTitle === 'string' && typeof quiz.generatedAt === 'string' && ['text','transcript','audio'].includes(quiz.source) && Array.isArray(quiz.questions) && quiz.questions.length === 8 && quiz.questions.every(q => q && typeof q.question === 'string' && Array.isArray(q.options) && q.options.length === 4 && q.options.every(o => typeof o === 'string') && Number.isInteger(q.answer) && q.answer >= 0 && q.answer < 4 && typeof q.explanation === 'string' && typeof q.evidence === 'string') && Array.isArray(quiz.reflections) && quiz.reflections.length === 2 && quiz.reflections.every(r => r && typeof r.question === 'string' && typeof r.guidance === 'string');
+  return quiz && /^[A-Za-z0-9_-]{11}$/.test(quiz.videoId || '') && typeof quiz.title === 'string' && typeof quiz.videoTitle === 'string' && typeof quiz.generatedAt === 'string' && (quiz.transcript == null || typeof quiz.transcript === 'string') && ['text','transcript','audio'].includes(quiz.source) && Array.isArray(quiz.questions) && quiz.questions.length === 8 && quiz.questions.every(q => q && typeof q.question === 'string' && Array.isArray(q.options) && q.options.length === 4 && q.options.every(o => typeof o === 'string') && Number.isInteger(q.answer) && q.answer >= 0 && q.answer < 4 && typeof q.explanation === 'string' && typeof q.evidence === 'string') && Array.isArray(quiz.reflections) && quiz.reflections.length === 2 && quiz.reflections.every(r => r && typeof r.question === 'string' && typeof r.guidance === 'string');
 }
 function validStudyAttempt(attempt) {
   return attempt && Array.isArray(attempt.answers) && attempt.answers.length === 8 && attempt.answers.every(a => Number.isInteger(a) && a >= 0 && a <= 3) && Array.isArray(attempt.reflections) && attempt.reflections.length === 2 && attempt.reflections.every(r => typeof r === 'string') && typeof attempt.finishedAt === 'string';
@@ -36,16 +36,16 @@ function paintStudyQuiz() {
   if (!host || !video || video.id !== studyQuizUI.videoId) return;
   const record = currentStudyRecord();
   const pending = quizMap('ilm-yolida-quiz-jobs')[video.id];
-  host.innerHTML = `<div class="tools"><button class="primary" type="button" onclick="requestStudyQuiz('auto')" ${studyQuizUI.busy?'disabled':''}>${record?'Yangi test yaratish':'Avtomatik test yaratish'}</button>${pending&&!studyQuizUI.busy?'<button class="ghost" type="button" onclick="resumeStudyQuizPoll()">Natijani tekshirish</button>':''}</div>
-    <p class="settings-note">Avval tayyor transkript tekshiriladi. U bo‘lmasa, audio asosida matn olinadi. Uzoq videolar bir necha daqiqa vaqt olishi mumkin.</p>
+  host.innerHTML = `<div class="tools"><button class="primary" type="button" onclick="requestStudyQuiz('auto')" ${studyQuizUI.busy?'disabled':''}>${record?'Avtomatik testni yangilash':'Audio/transkriptdan test yaratish'}</button>${pending&&!studyQuizUI.busy?'<button class="ghost" type="button" onclick="resumeStudyQuizPoll()">Natijani tekshirish</button>':''}</div>
+    <p class="settings-note">Avval tayyor transkript tekshiriladi. U bo‘lmasa, video audiosi matnga aylantiriladi. Tayyor matnni pastda ko‘rib, tahrirlashingiz yoki almashtirishingiz mumkin.</p>
     <p class="quiz-job-status" role="status" aria-live="polite">${esc(studyQuizUI.busy?(studyQuizLabels[studyQuizUI.stage]||studyQuizLabels.queued):'')}</p>
     ${studyQuizUI.error?`<p class="quiz-error" role="alert">${esc(studyQuizUI.error)}</p>`:''}
     ${studyQuizUI.busy?'<button class="chip-btn" type="button" onclick="pauseStudyQuizPoll()">Kutishni to‘xtatish</button>':''}
-    <details id="quiz-text-details" ${studyQuizUI.error?'open':''}><summary>Matnni o‘zim joylayman</summary><label class="quiz-text-label" for="quiz-source-text">Video transkripti yoki nutq matni</label><textarea id="quiz-source-text" class="quiz-source-text" maxlength="100000" placeholder="Video matnini shu yerga joylang (kamida 80 so‘z va 400 belgi)…" oninput="saveStudySource(this.value)"></textarea><p class="settings-note">Matn istalgan tilda bo‘lishi mumkin. Savollar o‘zbek tilida yaratiladi. 100 000 belgigacha; uzunroq video uchun kerakli bo‘limni tanlang.</p><button class="ghost" type="button" onclick="requestStudyQuiz('text')" ${studyQuizUI.busy?'disabled':''}>Matndan test yaratish</button></details>
+    <details id="quiz-text-details" ${studyQuizUI.error?'open':''}><summary>Transkriptni tekshirish yoki o‘zim joylash</summary><label class="quiz-text-label" for="quiz-source-text">Video transkripti yoki nutq matni</label><textarea id="quiz-source-text" class="quiz-source-text" maxlength="100000" placeholder="Video matnini shu yerga joylang (kamida 80 so‘z va 400 belgi)…" oninput="saveStudySource(this.value)"></textarea><p class="settings-note">Avtomatik olingan matn shu yerda paydo bo‘ladi. Xato bo‘lsa tahrirlang yoki o‘zingizdagi to‘liq matn bilan almashtiring. Savollar o‘zbek tilida yaratiladi.</p><button class="ghost" type="button" onclick="requestStudyQuiz('text')" ${studyQuizUI.busy?'disabled':''}>Shu matndan test yaratish</button></details>
     <p class="settings-note">Test yaratishda video havolasi Supadata xizmatiga, transkript yoki joylangan matn esa OpenAI xizmatiga yuboriladi. AI savollarida xato bo‘lishi mumkin.</p>
     ${record?studyQuizForm(record):''}${studyQuizLibrary(video.id)}`;
   const source = storage.get('ilm-yolida-draft-quiz-source-'+video.id, '');
-  document.getElementById('quiz-source-text').value = typeof source === 'string' ? source : '';
+  document.getElementById('quiz-source-text').value = typeof source === 'string' && source ? source : typeof record?.quiz?.transcript === 'string' ? record.quiz.transcript : '';
   restoreStudyAnswers(record);
 }
 function studyQuizLibrary(active) {
@@ -106,6 +106,7 @@ async function pollStudyQuiz(job,token,videoId) {
       if(!validStudyQuiz(data.quiz)||data.quiz.videoId!==videoId)throw new Error('Test formati noto‘g‘ri. Qayta urinib ko‘ring.');
       const records=studyQuizRecords();records[videoId]={quiz:data.quiz};
       if(!storage.set('ilm-yolida-study-quizzes',records)){studyQuizUI.busy=false;studyQuizUI.error='Testni saqlab bo‘lmadi. Brauzer xotirasini tekshirib, natijani qayta oling.';paintStudyQuiz();return;}
+      if(typeof data.quiz.transcript==='string')saveStudySource(data.quiz.transcript);
       try{localStorage.removeItem('ilm-yolida-draft-quiz-answers-'+videoId)}catch{}
       forgetStudyJob(videoId);studyQuizUI.busy=false;studyQuizUI.error='';paintStudyQuiz();return;
     }

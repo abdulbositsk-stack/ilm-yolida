@@ -38,9 +38,10 @@ After importing the project:
 
 1. Create a **private Vercel Blob** store and connect it to this project. Vercel
    uses the connected store for group challenges and quiz jobs.
-2. Add `OPENAI_API_KEY`, `SUPADATA_API_KEY`, and `CRON_SECRET` in the Vercel
-   project's Environment Variables. `SUPADATA_API_KEY` is only needed for
-   automatic transcript mode. `CRON_SECRET` should be a random secret.
+2. Add `GEMINI_API_KEY` (recommended) or `OPENAI_API_KEY`, plus `CRON_SECRET`,
+   in the Vercel project's Environment Variables. For automatic video-to-text,
+   also add `SUPADATA_API_KEY`; without it, Gemini can transcribe a public
+   YouTube video directly. `CRON_SECRET` should be a random secret.
 3. Deploy the project. Local preview with Vercel's environment uses
    `vercel dev` after linking the project and pulling its environment variables.
 

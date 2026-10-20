@@ -179,5 +179,5 @@ export async function generateQuiz(input, {
     for (let i = options.length - 1; i > 0; i--) { const j = randomInt(i + 1); [options[i], options[j]] = [options[j], options[i]]; }
     q.options = options.map(o => o.text); q.answer = options.findIndex(o => o.correct);
   }
-  return { ...quiz, source: source.source, videoId: input.videoId, videoTitle: input.title, generatedAt: new Date(now()).toISOString() };
+  return { ...quiz, transcript: source.text, source: source.source, videoId: input.videoId, videoTitle: input.title, generatedAt: new Date(now()).toISOString() };
 }
