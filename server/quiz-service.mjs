@@ -42,6 +42,7 @@ export function validateQuiz(quiz, transcript) {
   return quiz;
 }
 
+const withDetail = (error, detail) => Object.assign(error, { detail });
 async function providerJson(url, options, fetcher, timeout = 120000, model = false) {
   let response;
   try { response = await fetcher(url, { ...options, signal: AbortSignal.timeout(timeout) }); }
@@ -49,10 +50,12 @@ async function providerJson(url, options, fetcher, timeout = 120000, model = fal
   let data;
   try { data = await response.json(); } catch { throw new QuizError('provider_error', 'Xizmat javobini o‘qib bo‘lmadi.', 502); }
   if (!response.ok) {
-    if ([401, 402, 403, 429].includes(response.status) || (model && response.status === 400 && /api.?key/i.test(JSON.stringify(data)))) throw new QuizError('service_unavailable', 'Test xizmati vaqtincha mavjud emas. Administrator xizmat sozlamalari yoki limitini tekshirishi kerak.', 503);
-    if (model && response.status === 503) throw new QuizError('provider_busy', 'AI xizmati hozir band. Birozdan keyin qayta urinib ko‘ring.', 503);
-    if (model) throw new QuizError('provider_error', 'Test yaratish xizmati xato qaytardi. Qayta urinib ko‘ring.', 502);
-    throw new QuizError('transcript_unavailable', 'Video matnini olish imkoni bo‘lmadi. Video matnini o‘zingiz joylang.', response.status === 404 || response.status === 422 ? 422 : 502);
+    const detail = response.status + ' ' + String(data?.error?.message || data?.error?.status || '').slice(0, 300);
+    console.error('[quiz] provider error', String(url).split('?')[0].replace('https://', ''), detail);
+    if ([401, 402, 403, 429].includes(response.status) || (model && response.status === 400 && /api.?key/i.test(JSON.stringify(data)))) throw withDetail(new QuizError('service_unavailable', 'Test xizmati vaqtincha mavjud emas. Administrator xizmat sozlamalari yoki limitini tekshirishi kerak.', 503), detail);
+    if (model && response.status === 503) throw withDetail(new QuizError('provider_busy', 'AI xizmati hozir band. Birozdan keyin qayta urinib ko‘ring.', 503), detail);
+    if (model) throw withDetail(new QuizError('provider_error', 'Test yaratish xizmati xato qaytardi. Qayta urinib ko‘ring.', 502), detail);
+    throw withDetail(new QuizError('transcript_unavailable', 'Video matnini olish imkoni bo‘lmadi. Video matnini o‘zingiz joylang.', response.status === 404 || response.status === 422 ? 422 : 502), detail);
   }
   return data;
 }
@@ -82,17 +85,29 @@ async function askGemini(instructions, text, env, fetcher) {
     generationConfig: { responseMimeType: 'application/json', responseJsonSchema: geminiSchema(quizSchema), maxOutputTokens: 16000 }
   }, env, fetcher, 240000);
 }
-// Free-tier models are often busy (503) or rate limited (429), so fall back to the next one.
-async function geminiGenerate(body, env, fetcher, timeout = 120000) {
-  const models = [...new Set([env.GEMINI_QUIZ_MODEL || 'gemini-3.8-flash', 'gemini-3.5-flash', 'gemini-flash-latest'])];
+// Use Pro for assessment quality and Flash for the longer transcription pass.
+// Each list has fallbacks because availability and quotas can differ by account.
+function geminiModels(env, purpose = 'quiz') {
+  const preferred = purpose === 'transcript'
+    ? env.GEMINI_TRANSCRIPT_MODEL || 'gemini-3.8-flash'
+    : env.GEMINI_QUIZ_MODEL || 'gemini-3.8-flash';
+  return [...new Set([preferred, 'gemini-3.8-flash', 'gemini-3.5-flash', 'gemini-flash-latest', 'gemini-2.5-flash'])];
+}
+async function geminiGenerate(body, env, fetcher, timeout = 120000, purpose = 'quiz') {
+  const models = geminiModels(env, purpose);
   let lastError;
+  const attempts = [];
   for (const model of models) {
+    const started = Date.now();
     try { return await geminiModel(model, body, env, fetcher, timeout); }
     catch (error) {
+      attempts.push(`${model}: ${error.code || 'error'} ${error.detail || error.message} (${Math.round((Date.now() - started) / 1000)}s)`);
+      console.error('[quiz] gemini model failed ->', attempts[attempts.length - 1]);
       if (!['provider_busy', 'provider_error', 'service_unavailable', 'provider_timeout'].includes(error.code)) throw error;
       lastError = error;
     }
   }
+  if (lastError) lastError.detail = attempts.join(' | ').slice(0, 900);
   throw lastError;
 }
 async function geminiModel(model, body, env, fetcher, timeout) {
@@ -109,14 +124,26 @@ async function geminiModel(model, body, env, fetcher, timeout) {
 async function geminiTranscript(input, { env, fetcher, onStage }) {
   await onStage('transcript');
   let text;
+  const prompt = 'Transcribe all speech in this video verbatim, in the language it is spoken. Return only the plain transcript text: no timestamps, speaker labels, headings or commentary. If the video has no speech, return an empty response.';
+  const videoUri = 'https://www.youtube.com/watch?v=' + input.videoId;
+  // Faqat ovoz kerak, shuning uchun kadrlarni juda kam va past aniqlikda olamiz: token sarfi ~10 baravar kamayadi
+  // va bepul limit (429) ga urilmaymiz. Agar API bu sozlamani rad etsa, oddiy usulga qaytamiz.
+  const request = lean => ({
+    contents: [{ role: 'user', parts: [
+      { fileData: { fileUri: videoUri }, ...(lean ? { videoMetadata: { fps: Number(env.GEMINI_VIDEO_FPS) || 0.1 } } : {}) },
+      { text: prompt }
+    ] }],
+    generationConfig: { maxOutputTokens: 60000, ...(lean ? { mediaResolution: 'MEDIA_RESOLUTION_LOW' } : {}) }
+  });
   try {
-    text = await geminiGenerate({
-      contents: [{ role: 'user', parts: [
-        { fileData: { fileUri: 'https://www.youtube.com/watch?v=' + input.videoId } },
-        { text: 'Transcribe all speech in this video verbatim, in the language it is spoken. Return only the plain transcript text: no timestamps, speaker labels, headings or commentary. If the video has no speech, return an empty response.' }
-      ] }],
-      generationConfig: { maxOutputTokens: 60000 }
-    }, env, fetcher, 300000);
+    try {
+      text = await geminiGenerate(request(true), env, fetcher, 300000, 'transcript');
+    } catch (error) {
+      if (error.code === 'provider_error' && /\b400\b/.test(error.detail || '')) {
+        console.error('[quiz] lean video settings rejected, retrying with defaults');
+        text = await geminiGenerate(request(false), env, fetcher, 300000, 'transcript');
+      } else throw error;
+    }
   } catch (error) {
     if (['refused', 'incomplete'].includes(error.code)) throw new QuizError('transcript_unavailable', 'Video matnini olish imkoni bo‘lmadi. Video matnini o‘zingiz joylang.', 422);
     throw error;

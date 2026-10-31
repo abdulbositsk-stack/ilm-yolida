@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Admin — Kirish kodlari</title>
+<style>
+  :root{--bg:#f6f1e4;--card:#fffdf7;--ink:#17332b;--muted:#5c6f68;--line:#17332b22;--brand:#0b6b52;--bad:#a3361f}
+  @media (prefers-color-scheme:dark){:root{--bg:#0f1f1a;--card:#17292b;--ink:#eef3ef;--muted:#9fb3ab;--line:#ffffff22;--brand:#38b48f;--bad:#ff8a73}}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;line-height:1.45}
+  main{max-width:880px;margin:0 auto;padding:20px 16px 60px}
+  h1{font-size:1.4rem;margin:8px 0 16px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:16px}
+  .row{display:flex;gap:8px;flex-wrap:wrap}
+  input{flex:1;min-width:140px;padding:11px;border:1px solid var(--line);border-radius:10px;font-size:1rem;background:#fff;color:#17332b}
+  button{border:0;border-radius:10px;padding:10px 14px;font-weight:700;cursor:pointer;background:var(--brand);color:#fff;font-size:.95rem}
+  button.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+  button.danger{background:var(--bad)}
+  button:disabled{opacity:.6;cursor:wait}
+  .msg{min-height:1.3em;margin:8px 0 0;font-weight:700;color:var(--bad)}
+  .msg.ok{color:var(--brand)}
+  .code{font-family:ui-monospace,Consolas,monospace;font-size:1.05rem;font-weight:800;letter-spacing:.04em}
+  .item{border-top:1px solid var(--line);padding:12px 0}
+  .item:first-child{border-top:0}
+  .meta{color:var(--muted);font-size:.86rem;margin:4px 0 8px}
+  .tag{display:inline-block;padding:2px 8px;border-radius:99px;font-size:.78rem;font-weight:800;background:#17332b14;margin-left:6px}
+  .tag.off{background:#a3361f22;color:var(--bad)}
+  .actions{display:flex;gap:6px;flex-wrap:wrap}
+  .new{border:2px dashed var(--brand);border-radius:12px;padding:12px;margin-top:12px;display:none}
+  .hidden{display:none}
+</style>
+</head>
+<body>
+<main>
+  <h1>Kirish kodlari</h1>
+
+  <section class="card" id="login">
+    <p>Admin parolini kiriting (Vercel’dagi <b>ADMIN_KEY</b>).</p>
+    <form class="row" id="login-form">
+      <input id="key" type="password" autocomplete="current-password" placeholder="Admin paroli">
+      <button type="submit">Kirish</button>
+    </form>
+    <p class="msg" id="login-msg"></p>
+  </section>
+
+  <section class="hidden" id="panel">
+    <div class="card">
+      <b>Yangi kod yaratish</b>
+      <p class="meta">Chekni tekshirib bo‘lgach, to‘lagan odam uchun kod yarating va unga Telegramda yuboring.</p>
+      <form class="row" id="create-form">
+        <input id="name" placeholder="Kimga? (masalan: Anton)" maxlength="80">
+        <input id="note" placeholder="Izoh (ixtiyoriy)" maxlength="200">
+        <button type="submit">Kod yaratish</button>
+      </form>
+      <div class="new" id="new">
+        <div>Yangi kod:</div>
+        <div class="code" id="new-code"></div>
+        <div class="actions" style="margin-top:8px">
+          <button type="button" id="copy-code">Kodni nusxalash</button>
+          <button type="button" class="ghost" id="copy-msg">Xabar bilan nusxalash</button>
+        </div>
+      </div>
+      <p class="msg" id="create-msg"></p>
+    </div>
+
+    <div class="card">
+      <div class="row" style="justify-content:space-between;align-items:center">
+        <b id="count">Kodlar</b>
+        <button type="button" class="ghost" id="refresh">Yangilash</button>
+      </div>
+      <div id="list"></div>
+    </div>
+  </section>
+</main>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var adminKey = '';
+  try { adminKey = sessionStorage.getItem('ilm-admin-key') || ''; } catch (e) {}
+
+  function api(body) {
+    return fetch('/api/access', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey },
+      body: JSON.stringify(body)
+    }).then(function (r) { return r.json().catch(function () { return {}; }).then(function (d) { return { status: r.status, data: d }; }); });
+  }
+  function fmt(iso) {
+    if (!iso) return '—';
+    var d = new Date(iso);
+    return isNaN(d) ? '—' : d.toLocaleString('uz-UZ', { dateStyle: 'short', timeStyle: 'short' });
+  }
+  function msg(node, text, ok) { node.textContent = text || ''; node.className = 'msg' + (ok ? ' ok' : ''); }
+  function copy(text, button) {
+    var label = button.textContent;
+    var done = function () { button.textContent = 'Nusxalandi ✓'; setTimeout(function () { button.textContent = label; }, 1500); };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, function () {});
+    else done();
+  }
+
+  function render(codes, max) {
+    $('count').textContent = 'Kodlar: ' + codes.length;
+    var list = $('list');
+    list.textContent = '';
+    if (!codes.length) { var p = document.createElement('p'); p.className = 'meta'; p.textContent = 'Hali kod yaratilmagan.'; list.appendChild(p); return; }
+    codes.forEach(function (c) {
+      var item = document.createElement('div'); item.className = 'item';
+      var head = document.createElement('div');
+      var code = document.createElement('span'); code.className = 'code'; code.textContent = c.code;
+      head.appendChild(code);
+      var tag = document.createElement('span'); tag.className = 'tag' + (c.revoked ? ' off' : ''); tag.textContent = c.revoked ? 'Bekor qilingan' : 'Faol';
+      head.appendChild(tag);
+      var used = document.createElement('span'); used.className = 'tag'; used.textContent = 'Qurilma: ' + c.devices.length + '/' + c.maxDevices;
+      head.appendChild(used);
+      item.appendChild(head);
+
+      var meta = document.createElement('div'); meta.className = 'meta';
+      var who = (c.name || 'Ismsiz') + (c.note ? ' · ' + c.note : '');
+      var last = c.devices.length ? ' · oxirgi kirish: ' + fmt(c.devices.map(function (d) { return d.lastSeen; }).sort().pop()) : ' · hali ishlatilmagan';
+      meta.textContent = who + ' · yaratilgan: ' + fmt(c.createdAt) + last;
+      item.appendChild(meta);
+
+      var actions = document.createElement('div'); actions.className = 'actions';
+      function act(label, cls, fn) {
+        var b = document.createElement('button'); b.type = 'button'; b.textContent = label; if (cls) b.className = cls;
+        b.addEventListener('click', fn); actions.appendChild(b); return b;
+      }
+      act('Nusxalash', 'ghost', function (e) { copy(c.code, e.target); });
+      if (c.revoked) act('Qayta yoqish', 'ghost', function () { run('restore', c.code); });
+      else act('Bekor qilish', 'danger', function () { if (confirm(c.code + ' kodini bekor qilasizmi?')) run('revoke', c.code); });
+      if (c.devices.length) act('Qurilmalarni tozalash', 'ghost', function () { if (confirm('Qurilmalar tozalansin? Odam kodni yangi qurilmada qayta kiritadi.')) run('reset-devices', c.code); });
+      act('O‘chirish', 'ghost', function () { if (confirm(c.code + ' butunlay o‘chirilsinmi?')) run('delete', c.code); });
+      item.appendChild(actions);
+      list.appendChild(item);
+    });
+  }
+
+  function load() {
+    return api({ action: 'list' }).then(function (res) {
+      if (res.status === 401 || res.status === 503) {
+        $('login').classList.remove('hidden'); $('panel').classList.add('hidden');
+        msg($('login-msg'), (res.data && res.data.error) || 'Kirib bo‘lmadi.');
+        return false;
+      }
+      if (!res.data.ok) { msg($('create-msg'), res.data.error || 'Xatolik'); return true; }
+      $('login').classList.add('hidden'); $('panel').classList.remove('hidden');
+      render(res.data.codes, res.data.maxDevices);
+      return true;
+    });
+  }
+  function run(action, code) {
+    api({ action: action, code: code }).then(function (res) {
+      if (!res.data.ok) alert(res.data.error || 'Xatolik');
+      load();
+    });
+  }
+
+  $('login-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    adminKey = $('key').value;
+    msg($('login-msg'), 'Tekshirilmoqda…', true);
+    load().then(function (ok) {
+      if (ok) { try { sessionStorage.setItem('ilm-admin-key', adminKey); } catch (e2) {} $('key').value = ''; msg($('login-msg'), ''); }
+    });
+  });
+  $('create-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var btn = e.target.querySelector('button'); btn.disabled = true;
+    api({ action: 'create', name: $('name').value, note: $('note').value }).then(function (res) {
+      btn.disabled = false;
+      if (!res.data.ok) { msg($('create-msg'), res.data.error || 'Xatolik'); return; }
+      msg($('create-msg'), '');
+      var code = res.data.code;
+      $('new-code').textContent = code; $('new').style.display = 'block';
+      $('copy-code').onclick = function (ev) { copy(code, ev.target); };
+      $('copy-msg').onclick = function (ev) {
+        copy('Rahmat! To‘lovingiz tasdiqlandi ✅\nSizning shaxsiy kirish kodingiz: ' + code + '\nUni Ustozlar davrasidagi qulflangan podcastni bosganda chiqadigan oynaga kiriting. Kod faqat sizniki va 2 ta qurilmada ishlaydi.', ev.target);
+      };
+      $('name').value = ''; $('note').value = '';
+      load();
+    });
+  });
+  $('refresh').addEventListener('click', load);
+
+  if (adminKey) load();
+})();
+</script>
+</body>
+</html>

@@ -6,9 +6,11 @@ fs.mkdirSync(output, { recursive: true });
 if (fs.existsSync(path.join(root, '.env'))) process.loadEnvFile(path.join(root, '.env'));
 const indexHtml = fs.readFileSync(path.join(root, 'index.html'), 'utf8')
   .replace('<script src="./assets/book-club.js">', '<script src="./assets/supabase-config.js"></script><script src="./assets/ilm-cloud.js"></script><script src="./assets/book-club.js">')
-  .replace('</body>', '<script src="./assets/bookshelf-pro.js"></script><script src="./assets/reader-groups.js"></script></body>');
+  .replace('<script src="./assets/reading-challenge.js"></script>', '')
+  .replace('</body>', '<script src="./assets/bookshelf-pro.js"></script><script src="./assets/reader-groups.js"></script><script src="./assets/reading-challenge.js"></script></body>');
 fs.writeFileSync(path.join(output, 'index.html'), indexHtml);
 fs.copyFileSync(path.join(root, 'Hayot Strategiyam.html'), path.join(output, 'Hayot Strategiyam.html'));
+fs.copyFileSync(path.join(root, 'admin.html'), path.join(output, 'admin.html'));
 fs.cpSync(path.join(root, 'assets'), path.join(output, 'assets'), { recursive: true });
 const publicConfig = {
   url: process.env.SUPABASE_URL || '',

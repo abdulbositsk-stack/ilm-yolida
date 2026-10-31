@@ -42,6 +42,12 @@ After importing the project:
    in the Vercel project's Environment Variables. For automatic video-to-text,
    also add `SUPADATA_API_KEY`; without it, Gemini can transcribe a public
    YouTube video directly. `CRON_SECRET` should be a random secret.
+
+   For a Gemini Pro setup, optionally add `GEMINI_QUIZ_MODEL=gemini-2.5-pro`.
+   The app uses that model to write and validate the 8+2 Uzbek assessment, while
+   `GEMINI_TRANSCRIPT_MODEL=gemini-3.8-flash` can be set separately for faster
+   public-YouTube transcription. The API key must be stored only in Vercel, never
+   in browser code or this repository.
 3. Deploy the project. Local preview with Vercel's environment uses
    `vercel dev` after linking the project and pulling its environment variables.
 

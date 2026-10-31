@@ -58,7 +58,7 @@ export async function runJob(id, { store = jobStore(), env = process.env, genera
     } });
     await store.setJSON(key, { ...publicJob, status: 'completed', stage: 'done', quiz }, { metadata: { expiresAt: job.expiresAt } });
   } catch (error) {
-    await store.setJSON(key, { ...publicJob, status: 'failed', error: error instanceof QuizError ? error.message : 'Test yaratilmadi. Matnni joylang yoki qayta urinib ko‘ring.', code: error instanceof QuizError ? error.code : 'generation_failed' }, { metadata: { expiresAt: job.expiresAt } });
+    await store.setJSON(key, { ...publicJob, status: 'failed', error: error instanceof QuizError ? error.message : 'Test yaratilmadi. Matnni joylang yoki qayta urinib ko‘ring.', code: error instanceof QuizError ? error.code : 'generation_failed', ...(process.env.ILM_LOCAL_DEV === 'true' && error?.detail ? { detail: error.detail } : {}) }, { metadata: { expiresAt: job.expiresAt } });
   }
 }
 export async function getJob(id, { store = jobStore(), now = Date.now } = {}) {
