@@ -5,6 +5,9 @@
   "functions": {
     "api/quiz.mjs": {
       "maxDuration": 300
+    },
+    "api/telegram.mjs": {
+      "maxDuration": 60
     }
   },
   "crons": [

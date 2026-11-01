@@ -1,9 +1,10 @@
-/* Ilm Yo'lida - Kitobxonlik: 30 kunlik o'qish challenge'i
+/* Ilm Yo'lida | Mutolaa - 15 kunlik o'qish challenge'i (Kitobxonlik bo'limi)
    Eski javon / guruh / lenta ko'rinishlarini almashtiradi (ma'lumotlari o'chirilmaydi).
    Qayta eski holatga qaytarish uchun index.html oxiridagi shu skript tegini olib tashlash kifoya. */
 (() => {
-  const KEY = 'ilm-yolida-reading30';
-  const TOTAL = 30, GOAL = 20;
+  const KEY = 'ilm-yolida-mutolaa15';
+  const TOTAL = 15, GOAL = 5;
+  const TG = 'https://t.me/ilmm_yolida';
   const esc = s => String(s ?? '').replace(/[&<>'"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[c]));
   const pad = n => String(n).padStart(2, '0');
   const ymd = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
@@ -13,18 +14,15 @@
   const short = d => `${d.getDate()}-${MON[d.getMonth()]}`;
   const long = d => `${d.getDate()}-${MONL[d.getMonth()]}, ${d.getFullYear()}`;
   const blankDay = () => ({ done: false, pages: GOAL, summary: '', dateStamp: '', book: '', newBook: false });
-  const fresh = () => ({ v: 1, name: '', book: '', start: ymd(new Date()), strikes: 0, failed: false, days: Array.from({ length: TOTAL }, blankDay) });
+  const fresh = () => ({ v: 1, name: '', book: '', start: ymd(new Date()), days: Array.from({ length: TOTAL }, blankDay) });
 
   const clean = raw => {
     if (!raw || typeof raw !== 'object' || !Array.isArray(raw.days) || raw.days.length !== TOTAL) return null;
-    const strikes = Math.max(0, Math.min(3, Math.floor(Number(raw.strikes)) || 0));
     return {
       v: 1,
       name: String(raw.name ?? '').slice(0, 80),
       book: String(raw.book ?? '').slice(0, 140),
       start: parse(raw.start) ? raw.start : ymd(new Date()),
-      strikes,
-      failed: strikes >= 3,
       days: raw.days.map(d => {
         d = d && typeof d === 'object' ? d : {};
         const pages = Number(d.pages);
@@ -90,12 +88,6 @@
   };
 
   /* ---------- ko'rinish bo'laklari ---------- */
-  const SLIP = {
-    1: '1-xatolik qayd etildi. Ertaga 40 sahifa o‘qing.',
-    2: '2-xatolik qayd etildi. Har bir ishtirokchiga 5 000 so‘m o‘tkazing, so‘ng ertaga 40 sahifa o‘qing.',
-    3: '3-xatolik qayd etildi. Kutubxonangizdan bitta kitob sovg‘a qiling — challenge muvaffaqiyatsiz deb belgilandi.',
-  };
-
   const topHTML = () => {
     const c = doneCount(), p = Math.round(c / TOTAL * 100);
     return `<div class="rc-stats">
@@ -110,38 +102,20 @@
     </div>`;
   };
 
-  const strikeHTML = () => `
-    ${S.failed ? '<div class="rc-failed">📕 3 ta xatolikdan so‘ng challenge muvaffaqiyatsiz deb belgilandi. Kitob sovg‘a qiling, so‘ng qaytadan boshlash uchun «Hammasini tozalash» tugmasini bosing.</div>' : ''}
-    <section class="rc-card rc-strikes">
-      <h3>Kunni o‘tkazib yubordingizmi? Qoida shu</h3>
-      <ol>
-        <li><b>1-xatolik</b> — ertasi kuni 40 sahifa o‘qing.</li>
-        <li><b>2-xatolik</b> — har bir ishtirokchiga 5 000 so‘m o‘tkazing, so‘ng ertasi kuni 40 sahifa o‘qing.</li>
-        <li><b>3-xatolik</b> — kutubxonangizdan bitta kitob sovg‘a qiling (yoki sotib olib sovg‘a qiling). Challenge muvaffaqiyatsiz deb belgilanadi.</li>
-      </ol>
-      <div class="rc-seals">
-        ${[1, 2, 3].map(n => `<span class="rc-seal ${S.strikes >= n ? 'used' : ''}">${n}</span>`).join('')}
-        <span class="rc-seal-gap"></span>
-        ${S.strikes > 0 ? '<button type="button" class="rc-btn ghost" onclick="rcUndoSlip()">Bekor qilish</button>' : ''}
-        <button type="button" class="rc-btn red" onclick="rcSlip()" ${S.failed ? 'disabled' : ''}>Xatolikni qayd etish</button>
-      </div>
-      ${S.strikes ? `<p class="rc-slipmsg" role="status">${SLIP[S.strikes]}</p>` : ''}
-    </section>`;
-
   const shareBtn = i => {
     const d = S.days[i];
     return d.done && d.summary.trim()
-      ? `<button type="button" class="rc-share-btn" onclick="rcShare(${i})">📤 Guruh uchun dalil yuborish</button>` : '';
+      ? `<button type="button" class="rc-share-btn" onclick="rcShare(${i})">📤 Xulosani guruhga yuborish</button>` : '';
   };
 
   const dayHTML = i => {
     const d = S.days[i], date = dayDate(i), t = todayIdx();
-    const isToday = t === i, missed = t !== null && t > i && !d.done && !S.failed;
+    const isToday = t === i, missed = t !== null && t > i && !d.done;
     const tag = isToday ? ' · bugun' : missed ? ' · o‘tkazilgan' : '';
     return `<article class="rc-day ${d.done ? 'done' : ''} ${isToday ? 'today' : ''} ${missed ? 'missed' : ''}" id="rc-day-${i}">
       <div class="rc-day-top">
         <div><b class="rc-day-num">${i + 1}-kun</b><small>${date ? short(date) : ''}${tag}</small></div>
-        <button type="button" class="rc-check ${d.done ? 'on' : ''}" onclick="rcToggle(${i})" aria-pressed="${d.done}" aria-label="${i + 1}-kunni ${d.done ? 'bekor qilish' : 'tugallandi deb belgilash'}" ${S.failed ? 'disabled' : ''}>${d.done ? '✓' : ''}</button>
+        <button type="button" class="rc-check ${d.done ? 'on' : ''}" onclick="rcToggle(${i})" aria-pressed="${d.done}" aria-label="${i + 1}-kunni ${d.done ? 'bekor qilish' : 'tugallandi deb belgilash'}">${d.done ? '✓' : ''}</button>
       </div>
       <div class="rc-pages">
         <input type="number" min="0" max="9999" inputmode="numeric" value="${d.pages}" oninput="rcPages(${i},this.value)" aria-label="${i + 1}-kun: o‘qilgan sahifalar soni">
@@ -149,7 +123,7 @@
       </div>
       <label class="rc-newbook"><input type="checkbox" ${d.newBook ? 'checked' : ''} onchange="rcNewBook(${i},this.checked)"><span>Kitobni tugatdim — bugun yangisini boshladim</span></label>
       ${d.newBook ? `<input class="rc-booktitle" type="text" maxlength="140" value="${esc(d.book)}" placeholder="Yangi kitob nomi" oninput="rcBookTitle(${i},this.value)" aria-label="Yangi kitob nomi">` : ''}
-      <textarea class="rc-summary" maxlength="2000" placeholder="Bugungi o‘qishda nima bo‘ldi? Qisqa xulosa yozing…" oninput="rcSummary(${i},this.value)" aria-label="${i + 1}-kun xulosasi">${esc(d.summary)}</textarea>
+      <textarea class="rc-summary" maxlength="2000" placeholder="Qisqa xulosa (3–5 gap): nimani o‘qidim, eng muhim fikr nima, menga nima beradi?" oninput="rcSummary(${i},this.value)" aria-label="${i + 1}-kun xulosasi">${esc(d.summary)}</textarea>
       <div class="rc-share" id="rc-share-${i}">${shareBtn(i)}</div>
     </article>`;
   };
@@ -157,18 +131,18 @@
   const certHTML = () => {
     if (!unlocked()) {
       const n = S.days.filter(d => d.summary.trim()).length;
-      return `<div class="rc-locked"><span>🔒</span><p>Sertifikatni ochish uchun barcha 30 kunni — har birini belgilab va xulosa yozib — tugating.</p><small>${doneCount()}/${TOTAL} kun belgilangan · ${n}/${TOTAL} xulosa yozilgan</small></div>`;
+      return `<div class="rc-locked"><span>🔒</span><p>Sertifikatni ochish uchun barcha 15 kunni — har birini belgilab va xulosa yozib — tugating.</p><small>${doneCount()}/${TOTAL} kun belgilangan · ${n}/${TOTAL} xulosa yozilgan</small></div>`;
     }
     const names = bookNames(), pages = S.days.reduce((s, d) => s + d.pages, 0);
     const quoted = names.map(n => `<span class="rc-cert-book">“${esc(n)}”</span>`);
-    const body = `${joinNames(quoted)} ${names.length > 1 ? 'kitoblarini' : 'kitobini'} o‘qib, ${long(startDate())} dan ${long(endDate())} gacha ${pages} sahifani muvaffaqiyatli yakunlab, 30 kunlik o‘qish challenge’ini tugatgani uchun.`;
+    const body = `${joinNames(quoted)} ${names.length > 1 ? 'kitoblarini' : 'kitobini'} o‘qib, ${long(startDate())} dan ${long(endDate())} gacha ${pages} sahifani muvaffaqiyatli yakunlab, 15 kunlik Mutolaa challenge’ini tugatgani uchun.`;
     return `<div class="rc-cert-outer">
       <div id="rc-certificate">
         <div class="rc-cert-inner">
           <img class="rc-cert-logo" src="./assets/ilm-yolida-logo.png" alt="" crossorigin="anonymous">
-          <div class="rc-cert-eyebrow">Ilm Yo‘lida · Kitobxonlik jamoasi</div>
+          <div class="rc-cert-eyebrow">Ilm Yo‘lida | Mutolaa</div>
           <div class="rc-cert-title">Tugatganlik sertifikati</div>
-          <div class="rc-cert-sub">30 kunlik o‘qish challenge’i</div>
+          <div class="rc-cert-sub">15 kunlik Mutolaa challenge’i</div>
           <div class="rc-cert-presented">Ushbu sertifikat quyidagi shaxsga topshiriladi</div>
           <div class="rc-cert-name">${esc(readerName())}</div>
           <div class="rc-cert-body">${body}</div>
@@ -196,20 +170,63 @@
     </div>
   </section>`;
 
-  window.booksView = () => `<section class="rc-app">
+  let botName; // undefined: hali so'ralmagan, null: bot ulanmagan
+  const loadBot = () => {
+    if (botName !== undefined) return;
+    botName = null;
+    fetch('/api/telegram', { headers: { Accept: 'application/json' } }).then(r => r.json()).then(d => {
+      if (d && typeof d.bot === 'string' && /^[A-Za-z0-9_]{4,64}$/.test(d.bot)) {
+        botName = d.bot;
+        const a = document.getElementById('rc-bot'); if (a) { a.href = 'https://t.me/' + botName; a.hidden = false; }
+      }
+    }).catch(() => {});
+  };
+  const TEMPLATE = 'Bugun … kitobining … qismini o‘qidim.\nEng muhim fikr: …\nBu menga …\nSavol yoki iqtibos: …';
+  const guideHTML = () => `<section class="rc-card rc-guide" id="rc-guide">
+    <span class="rc-kicker">XULOSA YOZISH QO‘LLANMASI</span>
+    <h2>Qanday xulosa yoziladi?</h2>
+    <p class="rc-lead">Xulosa — kitobni qaytarib yozish emas. O‘qiganingizdan nima qolganini <b>o‘z so‘zingiz bilan</b> aytish. Kuniga 5 sahifa o‘qib, 3–5 ta gap yozsangiz, yetarli.</p>
+    <ol class="rc-steps">
+      <li><i>1</i><div><b>Nimani o‘qidim?</b><span>Bir gapda ayting: kitob nomi va bugungi sahifalar nima haqida edi.</span></div></li>
+      <li><i>2</i><div><b>Eng muhim fikr nima?</b><span>Sizni to‘xtatib qo‘ygan bitta fikrni tanlang va o‘z so‘zingiz bilan yozing.</span></div></li>
+      <li><i>3</i><div><b>Menga nima beradi?</b><span>Bu fikr hayotingizga qanday aloqador? Bugun yoki ertaga qanday qo‘llay olasiz?</span></div></li>
+      <li><i>4</i><div><b>Savol yoki iqtibos <em>(ixtiyoriy)</em></b><span>Yoqqan jumlani qo‘shtirnoq ichida yozing yoki ko‘nglingizda qolgan savolni qoldiring.</span></div></li>
+    </ol>
+    <div class="rc-example"><small>NAMUNA</small><p>Bugun “Atom odatlar” kitobining 1-bobini o‘qidim: kichik o‘zgarishlar vaqt o‘tib katta natija beradi. Eng muhim fikr — maqsaddan ko‘ra tizim muhimroq ekan. Men ham har kuni 5 sahifa o‘qishni odatga aylantirsam, kitobni zo‘riqmasdan tugataman. Ertadan telefonni o‘qish joyimdan uzoqroqqa qo‘yaman.</p></div>
+    <div class="rc-dodont">
+      <div class="do"><b>✓ Yaxshi xulosa</b><ul><li>O‘z so‘zingiz bilan yozilgan</li><li>3–5 ta gap, aniq bitta fikr</li><li>Hayotingiz bilan bog‘langan</li></ul></div>
+      <div class="dont"><b>✕ Kerak emas</b><ul><li>Kitobdan ko‘chirib yozish</li><li>«Yaxshi kitob ekan» kabi umumiy gap</li><li>Juda uzun yozish — qisqa bo‘lsin</li></ul></div>
+    </div>
+    <button type="button" class="rc-btn" onclick="rcCopyTemplate()">📋 Shablonni nusxalash</button>
+  </section>`;
+
+  window.booksView = () => { setTimeout(loadBot, 0); return `<section class="rc-app">
     <header class="rc-hero">
       <button type="button" class="rc-back" onclick="programBack()">← Ilm maydoniga qaytish</button>
       <div class="rc-hero-text">
-        <span class="rc-eyebrow">KITOBXONLIK · 30 KUNLIK CHALLENGE</span>
-        <h1>Har kuni 20 sahifa.<br>30 kunda 600 sahifa.</h1>
-        <p>O‘qing, har kuni qisqa xulosa yozing va yakunda o‘z ismingizdagi sertifikatni oling.</p>
+        <img class="rc-hero-logo" src="./assets/ilm-yolida-logo.png" alt="Ilm Yo‘lida" onerror="this.remove()">
+        <span class="rc-eyebrow">ILM YO‘LIDA | MUTOLAA</span>
+        <h1>15 kunlik Mutolaa challenge’i</h1>
+        <div class="rc-trio"><span>15 kun</span><i>•</i><span>1 kitob</span><i>•</i><span>0 so‘m</span></div>
+        <span class="rc-free">MUTLAQO BEPUL</span>
+        <p>Har kuni kitob o‘qing, sahifalaringizni belgilang va o‘z xulosangizni yozing. Kuniga 5 sahifa ham yetarli.</p>
       </div>
     </header>
     <div class="rc-wrap">
       ${setupHTML()}
       <div id="rc-top">${topHTML()}</div>
-      <div id="rc-strike">${strikeHTML()}</div>
-      <h2 class="rc-h2">Sizning 30 kuningiz</h2>
+      <section class="rc-card rc-prize">
+        <h3>Eng faol ishtirokchilar</h3>
+        <p>📣 Eng yaxshi xulosalar Ilm Yo‘lida kanalida yoritiladi.</p>
+        <p>🎁 Yakunda eng faol ishtirokchilarga <b>kitob sovg‘a qilinadi!</b></p>
+        <a class="rc-cta" href="${TG}" target="_blank" rel="noopener">✈ Ishtirok etish · t.me/ilmm_yolida</a>
+        <div class="rc-bot-box">
+          <p>👥 <b>Maxsus mutolaa guruhi:</b> 5 ta do‘stingizni kanalga taklif qiling — bot sizga guruh havolasini beradi.</p>
+          <a class="rc-cta rc-bot" id="rc-bot" ${botName ? `href="https://t.me/${botName}"` : 'href="#" hidden'} target="_blank" rel="noopener">🤖 Botga o‘tish</a>
+        </div>
+      </section>
+      ${guideHTML()}
+      <h2 class="rc-h2">Sizning 15 kuningiz</h2>
       <div class="rc-days" id="rc-days">${S.days.map((_, i) => dayHTML(i)).join('')}</div>
       <h2 class="rc-h2">Sertifikat</h2>
       <div id="rc-cert">${certHTML()}</div>
@@ -218,18 +235,18 @@
         <label class="rc-btn">⬆ Zaxira nusxani yuklash<input type="file" accept="application/json,.json" hidden onchange="rcImport(this)"></label>
         <button type="button" class="rc-btn red-outline" onclick="rcReset()">Hammasini tozalash</button>
       </div>
-      <p class="rc-foot">Natijalar shu qurilmada avtomatik saqlanadi. Boshqa qurilmaga o‘tish uchun zaxira nusxa yuklab oling.</p>
+      <p class="rc-foot">Ilm yo‘lida birga yuramiz.<br>Natijalar shu qurilmada avtomatik saqlanadi. Boshqa qurilmaga o‘tish uchun zaxira nusxa yuklab oling.</p>
     </div>
-  </section>`;
+  </section>`; };
 
   /* kirish sahifasi (3 qadam) matni yangi mazmunga moslandi */
   window.bookWelcomeView = () => {
     const step = state.bookWelcome;
     const body = step === 1
-      ? `<div class="program-kicker">KITOBXONLIK · 01 / 03</div><h1>30 kun. Har kuni 20 sahifa. Bitta mustahkam odat.</h1><p>Kitobxonlik — bu kunlik intizom. Har kuni o‘qing, xulosa yozing va 30 kunda 600 sahifaga yeting.</p><button class="program-primary" onclick="setBookWelcome(2)">Boshlash →</button>`
+      ? `<div class="program-kicker">KITOBXONLIK · 01 / 03</div><h1>15 kun. 1 kitob. 0 so‘m.</h1><p>Ilm Yo‘lida | Mutolaa — mutlaqo bepul challenge. Har kuni 5 sahifa o‘qing va o‘z xulosangizni yozing.</p><button class="program-primary" onclick="setBookWelcome(2)">Boshlash →</button>`
       : step === 2
-        ? `<div class="program-kicker">KITOBXONLIK · 02 / 03</div><h1>O‘qing. Belgilang. Xulosa yozing.</h1><div class="program-steps"><div><b>01 · Kunlik reja</b><span>Har kuni sahifalarni kiriting va kunni belgilang.</span></div><div><b>02 · Xulosa va dalil</b><span>Qisqa xulosa yozing va guruh uchun dalil kartasini yuboring.</span></div><div><b>03 · Sertifikat</b><span>30 kunni tugatsangiz, ismingizdagi sertifikat ochiladi.</span></div></div><div class="program-actions"><button class="program-back" onclick="setBookWelcome(1)">← Ortga</button><button class="program-primary" onclick="setBookWelcome(3)">Ichkarida nima bor? →</button></div>`
-        : `<div class="program-kicker">KITOBXONLIK · 03 / 03</div><h1>Kunlik reja. Dalil kartasi. Sertifikat.</h1><div class="program-preview-grid"><article><b>30 kunlik reja</b><span>Sahifa, kitob va xulosa — kunma-kun.</span><i></i></article><article><b>Dalil kartasi</b><span>Kunlik natijangizni rasm qilib ulashing.</span><i></i></article><article><b>Sertifikat</b><span>Challenge yakunida yuqori sifatli sertifikat.</span><i></i></article></div><p>Bugundan boshlang — birinchi 20 sahifa sizni kutyapti.</p><div class="program-actions"><button class="program-back" onclick="setBookWelcome(2)">← Ortga</button><button class="program-primary" onclick="enterBooks()">Kitobxonlikka kirish →</button></div>`;
+        ? `<div class="program-kicker">KITOBXONLIK · 02 / 03</div><h1>O‘qing. Belgilang. Xulosa yozing.</h1><div class="program-steps"><div><b>01 · Kunlik o‘qish</b><span>Har kuni kitob o‘qing va sahifalaringizni belgilang.</span></div><div><b>02 · Xulosa</b><span>O‘z xulosangizni yozing va mini-guruhga yuboring.</span></div><div><b>03 · Sertifikat</b><span>15 kunni tugatsangiz, ismingizdagi sertifikat ochiladi.</span></div></div><div class="program-actions"><button class="program-back" onclick="setBookWelcome(1)">← Ortga</button><button class="program-primary" onclick="setBookWelcome(3)">Ichkarida nima bor? →</button></div>`
+        : `<div class="program-kicker">KITOBXONLIK · 03 / 03</div><h1>Kunlik reja. Xulosa kartasi. Sertifikat.</h1><div class="program-preview-grid"><article><b>15 kunlik reja</b><span>Sahifa, kitob va xulosa — kunma-kun.</span><i></i></article><article><b>Xulosa kartasi</b><span>Kunlik xulosangizni rasm qilib ulashing.</span><i></i></article><article><b>Sertifikat</b><span>Challenge yakunida ismingizdagi sertifikat.</span><i></i></article></div><p>Bugundan boshlang — birinchi 5 sahifa sizni kutyapti.</p><div class="program-actions"><button class="program-back" onclick="setBookWelcome(2)">← Ortga</button><button class="program-primary" onclick="enterBooks()">Kitobxonlikka kirish →</button></div>`;
     return `<section class="program-entry book-entry"><button class="program-return" onclick="programBack()">← Ilm maydoniga qaytish</button><div class="program-entry-content">${body}</div></section>`;
   };
 
@@ -238,7 +255,6 @@
   let certSig = '';
   const refresh = () => {
     setHTML('rc-top', topHTML());
-    setHTML('rc-strike', strikeHTML());
     const sig = unlocked() ? JSON.stringify([readerName(), bookNames(), S.start, S.days.map(d => d.pages), completedOn().getTime()]) : 'locked:' + doneCount() + ':' + S.days.filter(d => d.summary.trim()).length;
     if (sig !== certSig) { certSig = sig; setHTML('rc-cert', certHTML()); }
   };
@@ -265,7 +281,6 @@
       certSig = ''; repaintDays(); refresh();
     },
     rcToggle(i) {
-      if (S.failed) return;
       const d = S.days[i]; d.done = !d.done; d.dateStamp = d.done ? ymd(new Date()) : '';
       save(); repaintDay(i); refresh();
     },
@@ -282,17 +297,6 @@
       save(); repaintDay(i); certSig = ''; refresh();
     },
     rcBookTitle(i, value) { S.days[i].book = String(value).slice(0, 140); save(); refresh(); },
-    rcSlip() {
-      if (S.failed) return;
-      if (!confirm('Bugun o‘qish rejasini o‘tkazib yubordingizmi? Xatolik qayd etiladi.')) return;
-      S.strikes = Math.min(3, S.strikes + 1); S.failed = S.strikes >= 3;
-      save(); repaintDays(); refresh();
-    },
-    rcUndoSlip() {
-      if (S.strikes <= 0) return;
-      S.strikes -= 1; S.failed = false;
-      save(); repaintDays(); refresh();
-    },
     async rcShare(i) {
       const d = S.days[i];
       if (typeof html2canvas === 'undefined') { toast('Dalil kartasini yaratish uchun internet aloqasi kerak.'); return; }
@@ -301,7 +305,7 @@
       const stage = document.createElement('div');
       stage.style.cssText = 'position:fixed;left:-9999px;top:0';
       stage.innerHTML = `<div class="rc-proof" id="rc-proof">
-        <div class="rc-proof-brand">ILM YO‘LIDA · KITOBXONLIK</div>
+        <div class="rc-proof-brand">ILM YO‘LIDA | MUTOLAA</div>
         <div class="rc-proof-day">${i + 1}-kun</div>
         <div class="rc-proof-row"><span class="rc-proof-lbl">Sana</span><span class="rc-proof-val">${date ? long(date) : '—'}</span></div>
         <div class="rc-proof-row"><span class="rc-proof-lbl">Sahifa soni</span><span class="rc-proof-val">${d.pages} sahifa</span></div>
@@ -317,7 +321,7 @@
         const blob = await new Promise(res => canvas.toBlob(res, 'image/png'));
         if (!blob) throw new Error('blob');
         const name = `${i + 1}-kun-dalil.png`, file = new File([blob], name, { type: 'image/png' });
-        const caption = `${i + 1}-kun tugallandi - ${d.pages} sahifa #${i + 1}kun_tugallandi`;
+        const caption = `Ilm Yo‘lida | Mutolaa — ${i + 1}-kun tugallandi, ${d.pages} sahifa #${i + 1}kun_tugallandi`;
         if (navigator.canShare && navigator.canShare({ files: [file] })) {
           try { await navigator.share({ files: [file], title: `${i + 1}-kun — ${readerName()}`, text: caption }); return; }
           catch (err) { if (err && err.name === 'AbortError') return; }
@@ -349,10 +353,14 @@
       const off = () => { document.body.classList.remove('rc-printing'); window.removeEventListener('afterprint', off); };
       window.addEventListener('afterprint', off); window.print();
     },
+    async rcCopyTemplate() {
+      try { await navigator.clipboard.writeText(TEMPLATE); toast('Shablon nusxalandi. Xulosa maydoniga qo‘yib, nuqtalarni to‘ldiring.'); }
+      catch { toast('Nusxalab bo‘lmadi. Shablon: ' + TEMPLATE.replace(/\n/g, ' ')); }
+    },
     rcExport() {
       const blob = new Blob([JSON.stringify(S, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
-      download(url, `${(S.name.trim() || profileName() || 'kitobxonlik').replace(/\s+/g, '-').toLowerCase()}-30-kun-zaxira.json`);
+      download(url, `${(S.name.trim() || profileName() || 'mutolaa').replace(/\s+/g, '-').toLowerCase()}-mutolaa-zaxira.json`);
       setTimeout(() => URL.revokeObjectURL(url), 4000);
     },
     rcImport(input) {
@@ -366,7 +374,7 @@
       reader.readAsText(file); input.value = '';
     },
     rcReset() {
-      if (!confirm('Shu qurilmadagi 30 kunlik challenge natijalari tozalanadi. Davom etasizmi?')) return;
+      if (!confirm('Shu qurilmadagi Mutolaa challenge natijalari tozalanadi. Davom etasizmi?')) return;
       S = fresh(); save(); certSig = ''; render();
     },
   });
@@ -390,7 +398,11 @@
 .rc-hero::after{width:210px;height:210px;right:40px;top:40px;border-color:rgba(241,213,139,.18)}
 .rc-back{position:relative;border:1px solid rgba(251,250,244,.35);background:transparent;color:inherit;border-radius:999px;padding:8px 14px;font:inherit;font-weight:700;font-size:.86rem;cursor:pointer}
 .rc-back:hover{background:rgba(251,250,244,.12)}
-.rc-hero-text{position:relative;max-width:1000px;margin:clamp(26px,5vw,52px) auto 0;padding:0 4px}
+.rc-hero-text{position:relative;max-width:1000px;margin:clamp(22px,4vw,40px) auto 0;padding:0 4px}
+.rc-hero-logo{height:64px;width:auto;display:block;margin:0 0 14px;filter:drop-shadow(0 2px 8px rgba(0,0,0,.25))}
+.rc-trio{display:flex;flex-wrap:wrap;align-items:center;gap:10px;font-size:1.15rem;font-weight:800;margin-bottom:12px}
+.rc-trio i{color:var(--gold);font-style:normal}
+.rc-free{display:inline-block;background:linear-gradient(180deg,#f1d58b,#d5a63b);color:#3a2b05;font-weight:900;letter-spacing:.08em;font-size:.82rem;padding:7px 18px;border-radius:999px;margin-bottom:14px;box-shadow:0 6px 18px rgba(0,0,0,.2)}
 .rc-hero-text,.rc-wrap{max-width:960px}
 .rc-eyebrow{display:block;color:var(--gold2);font-size:.76rem;font-weight:900;letter-spacing:.16em}
 .rc-hero h1{font-family:"Cormorant Garamond",Georgia,serif;font-weight:700;font-size:clamp(2rem,6vw,3.5rem);line-height:1.04;margin:12px 0 10px;letter-spacing:-.01em}
@@ -412,16 +424,6 @@
 .rc-ribbon-top{display:flex;justify-content:space-between;font-size:.85rem;font-weight:700;color:var(--mut);margin-bottom:10px}
 .rc-track{height:14px;border-radius:999px;background:var(--g3);overflow:hidden}
 .rc-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,var(--g),var(--gold));transition:width .6s cubic-bezier(.4,0,.2,1)}
-.rc-failed{background:var(--red);color:#fff;border-radius:16px;padding:14px 18px;margin-bottom:14px;font-weight:700;text-align:center;line-height:1.5}
-.rc-strikes{border-left:5px solid var(--red);margin-bottom:26px}
-.rc-strikes h3{font-family:"Cormorant Garamond",Georgia,serif;font-size:1.35rem;margin:0 0 8px}
-.rc-strikes ol{margin:0 0 14px;padding-left:20px;font-size:.9rem;line-height:1.65;color:#40574d}
-.rc-strikes li b{color:var(--ink)}
-.rc-seals{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.rc-seal{width:36px;height:36px;border-radius:50%;border:2px solid var(--red);color:var(--red);display:inline-flex;align-items:center;justify-content:center;font-weight:800;font-size:.85rem;transition:.2s}
-.rc-seal.used{background:var(--red);color:#fff;transform:scale(1.06)}
-.rc-seal-gap{flex:1}
-.rc-slipmsg{margin:14px 0 0;padding:12px 14px;background:#fbefed;border-radius:12px;color:#7e342d;font-weight:600;font-size:.9rem;line-height:1.5}
 .rc-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;font:inherit;font-weight:700;font-size:.86rem;text-transform:none!important;letter-spacing:0!important;color:var(--ink)!important;border:1px solid var(--line);background:#fff;border-radius:10px;padding:10px 16px;cursor:pointer;transition:border-color .2s,filter .2s}
 .rc-btn:hover{border-color:var(--gold)}
 .rc-btn.primary{background:var(--g);border-color:var(--g);color:#fff!important}
@@ -436,8 +438,8 @@
 .rc-day:hover{transform:translateY(-2px)}
 .rc-day.done{border-color:var(--g);background:linear-gradient(180deg,#f4faf6,#fff 60%)}
 .rc-day.today{border-color:var(--gold);box-shadow:0 0 0 3px rgba(213,166,59,.25),0 10px 30px rgba(21,62,48,.07)}
-.rc-day.missed{border-color:#e4b9b3}
-.rc-day.missed small{color:var(--red)}
+.rc-day.missed{border-color:#ecd9a6}
+.rc-day.missed small{color:#a9791a}
 .rc-day-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px}
 .rc-day-num{display:block;font-family:"Cormorant Garamond",Georgia,serif;font-size:1.35rem;line-height:1.1}
 .rc-day small{font-size:.74rem;color:var(--mut);font-weight:600}
@@ -514,6 +516,34 @@
 #rc-toast.show{opacity:1;transform:translate(-50%,0)}
 @media(max-width:700px){.rc-stats{grid-template-columns:repeat(2,1fr)}.rc-grid2{grid-template-columns:1fr}.rc-cert-meta{flex-wrap:wrap;justify-content:center}.rc-cert-block{min-width:100px}}
 @media(prefers-reduced-motion:reduce){.rc-app *{transition:none!important}}
+.rc-prize{margin-bottom:20px;text-align:center;background:linear-gradient(180deg,#fffdf4,#fff);border-color:#ecd9a6}
+.rc-prize h3{font-family:"Cormorant Garamond",Georgia,serif;font-size:1.5rem;margin:0 0 10px;color:var(--g)}
+.rc-prize p{margin:6px 0;line-height:1.6}
+.rc-cta{display:inline-block;margin-top:12px;background:var(--g);color:#fff!important;text-decoration:none;font-weight:800;border-radius:999px;padding:12px 24px;box-shadow:0 10px 24px rgba(7,84,63,.28);transition:filter .2s}
+.rc-cta:hover{filter:brightness(1.14)}
+.rc-cta[hidden]{display:none}
+.rc-bot-box{margin-top:18px;padding-top:16px;border-top:1px dashed #ecd9a6}
+.rc-bot-box p{margin:0 0 4px}
+.rc-bot{background:#229ed9;box-shadow:0 10px 24px rgba(34,158,217,.3)}
+.rc-guide{margin-bottom:30px;border-top:4px solid var(--gold)}
+.rc-kicker{font-size:.72rem;font-weight:900;letter-spacing:.16em;color:#a9791a}
+.rc-guide h2{font-family:"Cormorant Garamond",Georgia,serif;font-size:1.9rem;margin:4px 0 8px}
+.rc-lead{margin:0 0 16px;line-height:1.65;color:#40574d}
+.rc-steps{list-style:none;margin:0 0 16px;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.rc-steps li{display:flex;gap:12px;background:var(--cream);border:1px solid var(--line);border-radius:14px;padding:14px}
+.rc-steps i{flex:0 0 32px;height:32px;border-radius:50%;background:var(--g);color:#fff;font-style:normal;font-weight:800;display:flex;align-items:center;justify-content:center}
+.rc-steps b{display:block;margin-bottom:3px}
+.rc-steps em{font-weight:500;color:var(--mut)}
+.rc-steps span{font-size:.86rem;line-height:1.55;color:#4b6258}
+.rc-example{background:#f4faf6;border-left:4px solid var(--g);border-radius:12px;padding:14px 16px;margin-bottom:16px}
+.rc-example small{font-weight:900;letter-spacing:.14em;color:var(--g);font-size:.7rem}
+.rc-example p{margin:6px 0 0;font-family:"Cormorant Garamond",Georgia,serif;font-size:1.18rem;line-height:1.6;font-style:italic}
+.rc-dodont{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.rc-dodont>div{border-radius:14px;padding:14px 16px;font-size:.88rem}
+.rc-dodont ul{margin:8px 0 0;padding-left:18px;line-height:1.7}
+.rc-dodont .do{background:#eaf6ef;color:#14503c}
+.rc-dodont .dont{background:#fbf1e3;color:#7a4b12}
+@media(max-width:700px){.rc-steps,.rc-dodont{grid-template-columns:1fr}}
 @page{size:A4 landscape;margin:10mm}
 @media print{
   body.rc-printing *{visibility:hidden}

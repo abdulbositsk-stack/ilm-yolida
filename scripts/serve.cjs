@@ -7,6 +7,7 @@ process.env.ILM_LOCAL_DEV = 'true';
 const api = import('../server/quiz-jobs.mjs');
 const groups = import('../server/group-challenges.mjs');
 const access = import('../server/access.mjs');
+const telegram = import('../server/telegram-bot.mjs');
 const limits = new Map();
 const types = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.png': 'image/png', '.mp3': 'audio/mpeg' };
 const server = http.createServer(async (req, res) => {
@@ -38,6 +39,14 @@ const server = http.createServer(async (req, res) => {
     for await (const chunk of req) chunks.push(chunk);
     const request = new Request('http://' + req.headers.host + req.url, { method: req.method, headers: req.headers, ...(req.method !== 'GET' && req.method !== 'HEAD' ? { body: Buffer.concat(chunks) } : {}) });
     const response = await accessApi(request);
+    res.writeHead(response.status, Object.fromEntries(response.headers)); res.end(await response.text()); return;
+  }
+  if (pathname === '/api/telegram') {
+    const { telegramApi } = await telegram;
+    const chunks = [];
+    for await (const chunk of req) chunks.push(chunk);
+    const request = new Request('http://' + req.headers.host + req.url, { method: req.method, headers: req.headers, ...(req.method !== 'GET' && req.method !== 'HEAD' ? { body: Buffer.concat(chunks) } : {}) });
+    const response = await telegramApi(request);
     res.writeHead(response.status, Object.fromEntries(response.headers)); res.end(await response.text()); return;
   }
   if (pathname === '/api/groups' || pathname.startsWith('/api/groups/')) {

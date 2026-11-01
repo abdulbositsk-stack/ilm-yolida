@@ -72,6 +72,18 @@
       </div>
       <div id="list"></div>
     </div>
+
+    <div class="card" id="tg-card">
+      <b>Telegram bot (Mutolaa)</b>
+      <p class="meta">5 ta do‘st taklif qilgan ishtirokchiga maxsus guruh havolasini bot beradi. Avval botni ulang, so‘ng holatni tekshiring.</p>
+      <div class="actions">
+        <button type="button" id="tg-setup">1. Botni ulash</button>
+        <button type="button" class="ghost" id="tg-info">2. Holatni tekshirish</button>
+      </div>
+      <div id="tg-out" class="meta" style="margin-top:10px"></div>
+      <div id="tg-chats"></div>
+      <p class="msg" id="tg-msg"></p>
+    </div>
   </section>
 </main>
 
@@ -184,6 +196,51 @@
     });
   });
   $('refresh').addEventListener('click', load);
+
+  function tgApi(body) {
+    return fetch('/api/telegram', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey },
+      body: JSON.stringify(body)
+    }).then(function (r) { return r.json().catch(function () { return {}; }).then(function (d) { return { status: r.status, data: d }; }); });
+  }
+  function line(parent, text) { var d = document.createElement('div'); d.textContent = text; parent.appendChild(d); }
+  function tgInfo() {
+    msg($('tg-msg'), 'Tekshirilmoqda…', true);
+    return tgApi({ action: 'info' }).then(function (res) {
+      var out = $('tg-out'), chats = $('tg-chats'); out.textContent = ''; chats.textContent = '';
+      if (!res.data.ok) { msg($('tg-msg'), res.data.error || 'Xatolik'); return; }
+      msg($('tg-msg'), '');
+      var d = res.data;
+      line(out, 'Bot: @' + d.bot);
+      line(out, (d.webhook.url ? '✅ Webhook ulangan' : '❌ Webhook ulanmagan — «Botni ulash» tugmasini bosing') + (d.webhook.lastError ? ' · oxirgi xato: ' + d.webhook.lastError : ''));
+      line(out, (d.channel.ok ? '✅ ' : '❌ ') + 'Kanal ' + d.channel.name + (d.channel.ok ? ': bot admin' : ': botni kanalga admin qiling («Foydalanuvchilarni taklif qilish» huquqi bilan)') + (d.channel.note ? ' (' + d.channel.note + ')' : ''));
+      line(out, (d.group.ok ? '✅ ' : '❌ ') + 'Maxsus guruh: ' + (d.group.id || 'tanlanmagan'));
+      if (d.chats && d.chats.length) {
+        line(chats, 'Bot a’zo bo‘lgan guruh/kanallar:');
+        d.chats.forEach(function (c) {
+          var item = document.createElement('div'); item.className = 'item';
+          var t = document.createElement('div'); t.textContent = c.title + ' · ' + c.type + ' · ' + c.id; item.appendChild(t);
+          if (c.type !== 'channel' && c.type !== 'private') {
+            var b = document.createElement('button'); b.type = 'button'; b.className = 'ghost'; b.textContent = 'Maxsus guruh qilish';
+            b.addEventListener('click', function () {
+              tgApi({ action: 'set-group', chatId: String(c.id) }).then(function (r) { msg($('tg-msg'), r.data.ok ? 'Maxsus guruh saqlandi ✓' : (r.data.error || 'Xatolik'), !!r.data.ok); tgInfo(); });
+            });
+            item.appendChild(b);
+          }
+          chats.appendChild(item);
+        });
+      } else line(chats, 'Hali guruh ko‘rinmayapti: botni maxsus guruhga qo‘shib, admin qiling, so‘ng «Holatni tekshirish»ni bosing.');
+    });
+  }
+  $('tg-info').addEventListener('click', tgInfo);
+  $('tg-setup').addEventListener('click', function () {
+    msg($('tg-msg'), 'Ulanmoqda…', true);
+    tgApi({ action: 'setup' }).then(function (res) {
+      if (!res.data.ok) { msg($('tg-msg'), res.data.error || 'Xatolik'); return; }
+      msg($('tg-msg'), 'Bot ulandi ✓', true); tgInfo();
+    });
+  });
 
   if (adminKey) load();
 })();
