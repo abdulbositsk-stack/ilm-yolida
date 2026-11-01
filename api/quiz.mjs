@@ -2,7 +2,7 @@ import { waitUntil } from '@vercel/functions';
 import { readJobInput, startJob, runJob, json, apiError } from '../server/quiz-jobs.mjs';
 import { checkPaidAccess } from '../server/access.mjs';
 
-export default async request => {
+const handler = async request => {
   try {
     const denied = await checkPaidAccess(request);
     if (denied) return denied;
@@ -13,3 +13,6 @@ export default async request => {
     return apiError(error);
   }
 };
+
+// Vercel: Web `fetch` uslubidagi handler (default export (req, res) uchun ishlaydi, Response qaytarsa osilib qoladi).
+export const GET = handler, POST = handler, PUT = handler, PATCH = handler, DELETE = handler, OPTIONS = handler, HEAD = handler;
