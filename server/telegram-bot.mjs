@@ -73,10 +73,17 @@ const T = {
   groupMissing: () => `⚙️ Maxsus guruh hali sozlanmagan. Iltimos, ${SUPPORT} ga yozing.`,
   notMember: () => `⚠️ Siz ${html(channelName())} kanalidan chiqib ketgansiz. Avval kanalga qayting, so‘ng urinib ko‘ring.`,
   busy: () => `⏳ Bot hozir sozlanmoqda. Birozdan so‘ng qayta urinib ko‘ring yoki ${SUPPORT} ga yozing.`,
-  help: () => `ℹ️ <b>Yordam</b>\n\n/start — shaxsiy havolangizni olish\n/holat — nechta do‘st qo‘shilganini ko‘rish\n/guruh — maxsus guruhga kirish\n\nSavollar bo‘lsa: ${SUPPORT}`,
+  help: () => `ℹ️ <b>Yordam</b>\n\n/start — shaxsiy havolangizni olish\n/holat — nechta do‘st qo‘shilganini ko‘rish\n/guruh — maxsus guruhga kirish\n/reyting — eng faol ishtirokchilar\n\nSavollar bo‘lsa: ${SUPPORT}`,
+  menuReady: () => '👇 Menyu tayyor. Pastdagi tugmalardan foydalaning.',
+  top: (rows, me) => `🏆 <b>Eng faol ishtirokchilar</b>\n\n${rows.length ? rows.map((r, i) => `${['🥇', '🥈', '🥉'][i] || `${i + 1}.`} ${html(r.first || 'Ishtirokchi')} — <b>${r.n}</b> ta do‘st`).join('\n') : 'Hali hech kim do‘st taklif qilmagan. Birinchi bo‘ling! 🚀'}${me ? `\n\n📍 Sizning o‘rningiz: <b>${me.rank}</b> (${me.n} ta do‘st)` : ''}`,
+  groupSaved: title => `✅ Bu guruh (<b>${html(title)}</b>) maxsus mutolaa guruhi sifatida saqlandi.`,
+  groupWelcome: name => `🎉 Xush kelibsiz, <b>${html(name)}</b>! Siz ${target()} ta do‘st taklif qilib, maxsus mutolaa guruhiga kirdingiz. Har kuni o‘qing va xulosangizni shu yerda ulashing 📖`,
+  noRights: () => '⛔ Bu buyruq faqat guruh adminlari uchun.',
 };
 
 const keyboard = (rows) => ({ inline_keyboard: rows });
+const MENU = { status: '📊 Holatim', link: '🔗 Havolam', group: '👥 Guruhga kirish', top: '🏆 Reyting', help: 'ℹ️ Yordam' };
+const menuMarkup = () => ({ keyboard: [[{ text: MENU.status }, { text: MENU.link }], [{ text: MENU.group }, { text: MENU.top }], [{ text: MENU.help }]], resize_keyboard: true, is_persistent: true });
 const shareUrl = link => `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent('📚 Ilm Yo‘lida | Mutolaa — bepul 15 kunlik challenge. Kanalga qo‘shiling:')}`;
 const mainButtons = (link, n) => keyboard([
   [{ text: '📤 Do‘stlarga ulashish', url: shareUrl(link) }],
@@ -84,7 +91,7 @@ const mainButtons = (link, n) => keyboard([
 ]);
 
 /* ---------- asosiy mantiq ---------- */
-export function createBot({ store, call, token = botToken(), now = () => Date.now() }) {
+export function createBot({ store, call, token = botToken(), now = () => Date.now(), sleep = ms => new Promise(r => setTimeout(r, ms)) }) {
   const botId = botIdOf(token);
   const userKey = id => `user-${id}`;
   const getUser = id => store.get(userKey(id));
@@ -175,10 +182,61 @@ export function createBot({ store, call, token = botToken(), now = () => Date.no
     return safeSend(chatId, `📈 <b>Statistika</b>\n\nIshtirokchilar: <b>${users}</b>\nTaklif orqali kirganlar (hozir kanalda): <b>${active}</b>\nGuruh havolasi olganlar: <b>${rewarded}</b>\nGuruhga kirganlar: <b>${inGroup}</b>`);
   }
 
-  async function onMessage(message) {
-    if (message.chat?.type !== 'private' || !message.from || message.from.is_bot) return;
+  async function topList(limit = 10) {
+    const rows = [];
+    for await (const page of store.list()) {
+      for (const blob of page.blobs) {
+        if (!blob.key.startsWith('user-')) continue;
+        const user = await store.get(blob.key);
+        if (user) rows.push({ id: user.id, first: user.first, n: countOf(user) });
+      }
+    }
+    rows.sort((a, b) => b.n - a.n);
+    return { rows, ranked: rows.filter(r => r.n > 0) };
+  }
+
+  async function sendTop(chatId, from) {
+    const { rows, ranked } = await topList();
+    const index = ranked.findIndex(r => r.id === from.id);
+    return safeSend(chatId, T.top(ranked.slice(0, 10), index >= 0 ? { rank: index + 1, n: ranked[index].n } : null));
+  }
+
+  async function broadcast(chatId, text) {
+    if (!text) return safeSend(chatId, 'Foydalanish: <code>/xabar Matn…</code>');
+    const ids = [];
+    for await (const page of store.list()) for (const blob of page.blobs) if (blob.key.startsWith('user-')) ids.push(blob.key.slice(5));
+    let ok = 0;
+    for (let i = 0; i < ids.length && i < 1500; i += 25) {
+      const results = await Promise.all(ids.slice(i, i + 25).map(id => safeSend(id, html(text))));
+      ok += results.filter(Boolean).length;
+      if (i + 25 < ids.length) await sleep(1000);
+    }
+    return safeSend(chatId, `📣 Xabar yuborildi: <b>${ok}</b> / ${Math.min(ids.length, 1500)}`);
+  }
+
+  async function onGroupMessage(message) {
     const command = String(message.text || '').trim().split(/[\s@]/)[0].toLowerCase();
-    if (command === '/start') return sendLinkMessage(message.chat.id, message.from);
+    if (command !== '/setgroup' || !message.from) return;
+    let admin = false;
+    try { const m = await call('getChatMember', { chat_id: message.chat.id, user_id: message.from.id }); admin = m.status === 'creator' || m.status === 'administrator'; } catch { admin = false; }
+    if (!admin) return safeSend(message.chat.id, T.noRights());
+    await store.setJSON('config', { ...((await store.get('config')) || {}), groupId: String(message.chat.id) });
+    return safeSend(message.chat.id, T.groupSaved(message.chat.title || 'guruh'));
+  }
+
+  async function onMessage(message) {
+    if (message.chat && (message.chat.type === 'group' || message.chat.type === 'supergroup')) return onGroupMessage(message);
+    if (message.chat?.type !== 'private' || !message.from || message.from.is_bot) return;
+    const raw = String(message.text || '').trim();
+    const command = raw.split(/[\s@]/)[0].toLowerCase();
+    if (raw === MENU.status) return sendStatus(message.chat.id, message.from);
+    if (raw === MENU.link) return sendLinkMessage(message.chat.id, message.from);
+    if (raw === MENU.group) return sendGroupLink(message.chat.id, message.from);
+    if (raw === MENU.top) return sendTop(message.chat.id, message.from);
+    if (raw === MENU.help) return safeSend(message.chat.id, T.help());
+    if (command === '/reyting') return sendTop(message.chat.id, message.from);
+    if (command === '/xabar' && adminIds().includes(String(message.from.id))) return broadcast(message.chat.id, raw.replace(/^\/xabar(@\w+)?\s*/i, '').trim());
+    if (command === '/start') { await safeSend(message.chat.id, T.menuReady(), { reply_markup: menuMarkup() }); return sendLinkMessage(message.chat.id, message.from); }
     if (command === '/holat') return sendStatus(message.chat.id, message.from);
     if (command === '/guruh') return sendGroupLink(message.chat.id, message.from);
     if (command === '/yordam' || command === '/help') return safeSend(message.chat.id, T.help());
@@ -237,7 +295,10 @@ export function createBot({ store, call, token = botToken(), now = () => Date.no
     const user = await getUser(after.user.id);
     if (!user) return;
     const isIn = MEMBER.has(after.status) || (after.status === 'restricted' && after.is_member);
-    if (user.inGroup !== isIn) { user.inGroup = isIn; await saveUser(user); }
+    if (user.inGroup !== isIn) {
+      user.inGroup = isIn; await saveUser(user);
+      if (isIn) await safeSend(update.chat.id, T.groupWelcome(user.first || after.user.first_name || 'do‘st'));
+    }
   }
 
   async function onMyChatMember(update) {
@@ -263,6 +324,21 @@ export function createBot({ store, call, token = botToken(), now = () => Date.no
   }
 
   return { handleUpdate, getGroupId };
+}
+
+/** Webhook, buyruqlar va bot tavsifini bir yo'la sozlaydi (admin sahifasi va scripts/telegram-setup.mjs ishlatadi). */
+export async function setupBot(call, token, url) {
+  await call('setWebhook', { url, secret_token: webhookSecret(token), allowed_updates: ALLOWED_UPDATES, drop_pending_updates: false });
+  await call('setMyCommands', { commands: [
+    { command: 'start', description: 'Shaxsiy taklif havolasini olish' },
+    { command: 'holat', description: 'Nechta do‘st qo‘shilganini ko‘rish' },
+    { command: 'guruh', description: 'Maxsus guruhga kirish' },
+    { command: 'reyting', description: 'Eng faol ishtirokchilar' },
+    { command: 'yordam', description: 'Yordam' },
+  ] });
+  await call('setMyCommands', { scope: { type: 'all_chat_administrators' }, commands: [{ command: 'setgroup', description: 'Shu guruhni maxsus mutolaa guruhi qilish' }] });
+  await call('setMyShortDescription', { short_description: `Ilm Yo‘lida | Mutolaa: ${target()} ta do‘st taklif qiling va maxsus mutolaa guruhiga kiring.` });
+  await call('setMyDescription', { description: `Ilm Yo‘lida | Mutolaa — bepul 15 kunlik challenge.\n\n${target()} ta do‘stingizni ${channelName()} kanaliga taklif qiling va maxsus mutolaa guruhiga havola oling.\n\nBoshlash uchun /start bosing.` });
 }
 
 /* ---------- HTTP (api/telegram.mjs) ---------- */
@@ -297,15 +373,7 @@ export async function telegramApi(request, { store: injected, call: injectedCall
   try {
     if (body.action === 'setup') {
       const url = `${new URL(request.url).origin}/api/telegram`;
-      await call('setWebhook', { url, secret_token: webhookSecret(token), allowed_updates: ALLOWED_UPDATES, drop_pending_updates: false });
-      await call('setMyCommands', { commands: [
-        { command: 'start', description: 'Shaxsiy taklif havolasini olish' },
-        { command: 'holat', description: 'Nechta do‘st qo‘shilganini ko‘rish' },
-        { command: 'guruh', description: 'Maxsus guruhga kirish' },
-        { command: 'yordam', description: 'Yordam' },
-      ] });
-      await call('setMyShortDescription', { short_description: `Ilm Yo‘lida | Mutolaa: ${target()} ta do‘st taklif qiling va maxsus mutolaa guruhiga kiring.` });
-      await call('setMyDescription', { description: `Ilm Yo‘lida | Mutolaa — bepul 15 kunlik challenge.\n\n${target()} ta do‘stingizni ${channelName()} kanaliga taklif qiling va maxsus mutolaa guruhiga havola oling.` });
+      await setupBot(call, token, url);
       return reply({ ok: true, url });
     }
     if (body.action === 'info') {

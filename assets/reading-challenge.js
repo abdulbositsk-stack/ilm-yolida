@@ -544,11 +544,73 @@
 .rc-dodont .do{background:#eaf6ef;color:#14503c}
 .rc-dodont .dont{background:#fbf1e3;color:#7a4b12}
 @media(max-width:700px){.rc-steps,.rc-dodont{grid-template-columns:1fr}}
+.rc-modal-back{position:fixed;inset:0;z-index:10000;background:rgba(20,16,8,.55);display:flex;align-items:center;justify-content:center;padding:16px;overflow:auto}
+.rc-modal{position:relative;background:#fffaf0;color:#2b2314;border-radius:20px;max-width:540px;width:100%;max-height:90vh;overflow:auto;padding:26px 24px;box-shadow:0 24px 60px rgba(0,0,0,.3)}
+.rc-modal h2{margin:6px 0 8px;font-family:"Cormorant Garamond",Georgia,serif;font-size:1.7rem}
+.rc-modal h3{margin:18px 0 6px;font-size:1rem}
+.rc-modal-x{position:absolute;right:12px;top:12px;border:0;background:#f1e6cc;border-radius:50%;width:32px;height:32px;cursor:pointer;font-size:1rem}
+.rc-info-list{margin:0;padding-left:20px;line-height:1.7;font-size:.92rem}
+.rc-info-note{font-size:.84rem;opacity:.75;margin:10px 0 0}
+.rc-info-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px;align-items:center}
+.rc-info-soon{font-size:.88rem;opacity:.7}
 @page{size:A4 landscape;margin:10mm}
 @media print{
   body.rc-printing *{visibility:hidden}
   body.rc-printing #rc-certificate,body.rc-printing #rc-certificate *{visibility:visible}
   body.rc-printing #rc-certificate{position:absolute;left:0;top:0;width:100%;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 }`;
+
+  /* ---- Alohida "Challenge va bot" tugmasi (Sozlamalar ichida) + oyna ---- */
+  const infoHTML = () => `<div class="rc-modal-back" id="rc-info" onclick="if(event.target===this)rcInfoClose()">
+    <div class="rc-modal" role="dialog" aria-modal="true" aria-label="Mutolaa challenge shartlari">
+      <button type="button" class="rc-modal-x" onclick="rcInfoClose()" aria-label="Yopish">✕</button>
+      <span class="rc-kicker">ILM YO‘LIDA | MUTOLAA</span>
+      <h2>15 kunlik mutolaa challenge</h2>
+      <p class="rc-lead">15 kun • 1 kitob • 0 so‘m. Har kuni kamida 5 sahifa o‘qiysiz va 3–5 gap xulosa yozasiz. Jarimalar yo‘q — faqat odat.</p>
+      <h3>Shartlar</h3>
+      <ul class="rc-info-list">
+        <li>Ishtirok <b>mutlaqo bepul</b>.</li>
+        <li>Kuniga kamida <b>5 sahifa</b> o‘qing va o‘z so‘zingiz bilan qisqa xulosa yozing.</li>
+        <li>Hech qanday jarima yo‘q: o‘qimagan kuningiz hisobdan chiqarilmaydi.</li>
+        <li>Eng faol ishtirokchilar kitob sovg‘alari bilan taqdirlanadi.</li>
+        <li>Natijalar va yangiliklar <b>Telegram kanali</b>da e’lon qilinadi.</li>
+      </ul>
+      <h3>Maxsus guruhga qanday kiraman?</h3>
+      <ol class="rc-info-list">
+        <li>Quyidagi tugma orqali <b>botni</b> oching va <b>Start</b> bosing.</li>
+        <li>Bot sizga <b>shaxsiy havola</b> beradi. Uni do‘stlaringizga yuboring.</li>
+        <li><b>5 ta do‘st</b> shu havola orqali <b>Ilm Yo‘lida kanaliga</b> qo‘shilsa, bot sizga maxsus guruhning bir martalik havolasini yuboradi.</li>
+      </ol>
+      <p class="rc-info-note">Buning uchun saytga kirish kerak emas, hammasi Telegramning o‘zida.</p>
+      <div class="rc-info-actions">
+        <a class="rc-cta rc-bot" id="rc-info-bot" href="#" target="_blank" rel="noopener" hidden>🤖 Botga o‘tish</a>
+        <span class="rc-info-soon" id="rc-info-soon" hidden>Bot tez orada ulanadi.</span>
+        <a class="rc-cta" href="${TG}" target="_blank" rel="noopener">📣 Telegram kanal</a>
+      </div>
+    </div>
+  </div>`;
+  window.rcInfoOpen = () => {
+    if (document.getElementById('rc-info')) return;
+    document.body.insertAdjacentHTML('beforeend', infoHTML());
+    const show = () => {
+      const a = document.getElementById('rc-info-bot'), n = document.getElementById('rc-info-soon');
+      if (botName) { if (a) { a.href = 'https://t.me/' + botName; a.hidden = false; } if (n) n.hidden = true; }
+      else if (n) n.hidden = false;
+    };
+    if (botName !== undefined) { show(); return; }
+    fetch('/api/telegram', { headers: { Accept: 'application/json' } }).then(r => r.json()).then(d => {
+      botName = (d && typeof d.bot === 'string' && /^[A-Za-z0-9_]{4,64}$/.test(d.bot)) ? d.bot : null;
+    }).catch(() => { botName = null; }).then(show);
+  };
+  window.rcInfoClose = () => { const m = document.getElementById('rc-info'); if (m) m.remove(); };
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') window.rcInfoClose(); });
+  const baseSettings = window.settingsView;
+  if (typeof baseSettings === 'function') {
+    window.settingsView = function () {
+      const html = baseSettings.apply(this, arguments);
+      const card = `<div class="card"><h2>Mutolaa challenge va bot</h2><p class="sub" style="margin-bottom:10px">15 kunlik challenge shartlari va maxsus guruh uchun Telegram bot.</p><div class="settings-row"><button class="ghost" type="button" onclick="rcInfoOpen()">🤖 Shartlar va bot</button></div></div>`;
+      return typeof html === 'string' ? html.replace(/<\/section>\s*$/, card + '</section>') : html;
+    };
+  }
   document.head.appendChild(style);
 })();

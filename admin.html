@@ -157,7 +157,10 @@
         msg($('login-msg'), (res.data && res.data.error) || 'Kirib bo‘lmadi.');
         return false;
       }
-      if (!res.data.ok) { msg($('create-msg'), res.data.error || 'Xatolik'); return true; }
+      if (!res.data.ok) {
+        var em = res.data.error || ('Server xatosi (' + res.status + '). Vercelda Blob ombori ulanganini tekshiring.');
+        msg($('create-msg'), em); msg($('login-msg'), em); return false;
+      }
       $('login').classList.add('hidden'); $('panel').classList.remove('hidden');
       render(res.data.codes, res.data.maxDevices);
       return true;
