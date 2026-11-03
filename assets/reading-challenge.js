@@ -13,7 +13,7 @@
   const MONL = ['yanvar', 'fevral', 'mart', 'aprel', 'may', 'iyun', 'iyul', 'avgust', 'sentabr', 'oktabr', 'noyabr', 'dekabr'];
   const short = d => `${d.getDate()}-${MON[d.getMonth()]}`;
   const long = d => `${d.getDate()}-${MONL[d.getMonth()]}, ${d.getFullYear()}`;
-  const blankDay = () => ({ done: false, pages: GOAL, summary: '', dateStamp: '', book: '', newBook: false });
+  const blankDay = () => ({ done: false, pages: GOAL, summary: '', dateStamp: '', book: '', newBook: false, quote: '', quoteBy: '' });
   const fresh = () => ({ v: 1, name: '', book: '', start: ymd(new Date()), days: Array.from({ length: TOTAL }, blankDay) });
 
   const clean = raw => {
@@ -33,6 +33,8 @@
           dateStamp: parse(d.dateStamp) ? d.dateStamp : '',
           book: String(d.book ?? '').slice(0, 140),
           newBook: Boolean(d.newBook),
+          quote: String(d.quote ?? '').slice(0, 400),
+          quoteBy: String(d.quoteBy ?? '').slice(0, 80),
         };
       }),
     };
@@ -124,6 +126,10 @@
       <label class="rc-newbook"><input type="checkbox" ${d.newBook ? 'checked' : ''} onchange="rcNewBook(${i},this.checked)"><span>Kitobni tugatdim — bugun yangisini boshladim</span></label>
       ${d.newBook ? `<input class="rc-booktitle" type="text" maxlength="140" value="${esc(d.book)}" placeholder="Yangi kitob nomi" oninput="rcBookTitle(${i},this.value)" aria-label="Yangi kitob nomi">` : ''}
       <textarea class="rc-summary" maxlength="2000" placeholder="Qisqa xulosa (3–5 gap): nimani o‘qidim, eng muhim fikr nima, menga nima beradi?" oninput="rcSummary(${i},this.value)" aria-label="${i + 1}-kun xulosasi">${esc(d.summary)}</textarea>
+      <div class="rc-quote-box">
+        <textarea class="rc-quote" maxlength="400" placeholder="Iqtibos (ixtiyoriy) — kitobdan yoqqan jumla" oninput="rcQuote(${i},'quote',this.value)" aria-label="${i + 1}-kun iqtibosi (ixtiyoriy)">${esc(d.quote)}</textarea>
+        <input class="rc-quote-by" type="text" maxlength="80" value="${esc(d.quoteBy)}" placeholder="Muallif (ixtiyoriy)" oninput="rcQuote(${i},'quoteBy',this.value)" aria-label="${i + 1}-kun iqtibos muallifi">
+      </div>
       <div class="rc-share" id="rc-share-${i}">${shareBtn(i)}</div>
     </article>`;
   };
@@ -296,38 +302,90 @@
       const d = S.days[i]; d.newBook = checked; if (!checked) d.book = '';
       save(); repaintDay(i); certSig = ''; refresh();
     },
+    rcQuote(i, field, value) { S.days[i][field] = String(value).slice(0, field === 'quote' ? 400 : 80); save(); },
     rcBookTitle(i, value) { S.days[i].book = String(value).slice(0, 140); save(); refresh(); },
     async rcShare(i) {
       const d = S.days[i];
       if (typeof html2canvas === 'undefined') { toast('Dalil kartasini yaratish uchun internet aloqasi kerak.'); return; }
       toast('Dalil kartasi tayyorlanmoqda…');
       const date = dayDate(i);
+      const hasQuote = !!(d.quote || '').trim();
+      const W = 1080, H = 1350;                       /* 4:5 — Telegram 1280 px dan oshmasa qayta siqmaydi */
       const stage = document.createElement('div');
       stage.style.cssText = 'position:fixed;left:-9999px;top:0';
-      stage.innerHTML = `<div class="rc-proof" id="rc-proof">
-        <div class="rc-proof-brand">ILM YO‘LIDA | MUTOLAA</div>
-        <div class="rc-proof-day">${i + 1}-kun</div>
-        <div class="rc-proof-row"><span class="rc-proof-lbl">Sana</span><span class="rc-proof-val">${date ? long(date) : '—'}</span></div>
-        <div class="rc-proof-row"><span class="rc-proof-lbl">Sahifa soni</span><span class="rc-proof-val">${d.pages} sahifa</span></div>
-        <div class="rc-proof-lbl rc-proof-gap">Xulosa va kitob nomi</div>
-        <div class="rc-proof-book">${esc(bookForDay(i) || 'Kitob nomi kiritilmagan')}</div>
-        <div class="rc-proof-summary">${esc(d.summary)}</div>
-        <div class="rc-proof-foot"><div class="rc-proof-name"><small>O‘quvchi</small>${esc(readerName())}</div></div>
-      </div>`;
       document.body.appendChild(stage);
+      const cardHTML = (text, part, total) => `<div class="rc-p" style="width:${W}px;height:${H}px">
+        <div class="rc-p-head">
+          <img class="rc-p-logo" src="./assets/ilm-yolida-logo.png" alt="">
+          <div class="rc-p-brand"><b>ILM YO‘LIDA</b><span>MUTOLAA CHALLENGE</span></div>
+          <div class="rc-p-day"><small>KUN</small>${i + 1}<em>/15</em></div>
+        </div>
+        <div class="rc-p-meta">
+          <div><small>SANA</small><b>${date ? long(date) : '—'}</b></div>
+          <div><small>BUGUN O‘QILDI</small><b>${d.pages} sahifa</b></div>
+          ${total > 1 ? `<div><small>QISM</small><b>${part} / ${total}</b></div>` : ''}
+        </div>
+        <div class="rc-p-body">
+          <div class="rc-p-book"><small>KITOB</small>${esc(bookForDay(i) || 'Kitob nomi kiritilmagan')}</div>
+          <div class="rc-p-rule"></div>
+          ${hasQuote && part === 1 ? `<div class="rc-p-quote"><div class="rc-p-quote-t">“${esc(d.quote.trim())}”</div>${d.quoteBy.trim() ? `<div class="rc-p-quote-by">— ${esc(d.quoteBy.trim())}</div>` : ''}</div>` : '<div class="rc-p-q">“</div>'}
+          <div class="rc-p-text">${esc(text)}</div>
+        </div>
+        <div class="rc-p-foot">
+          <div class="rc-p-name"><small>O‘QUVCHI</small>${esc(readerName())}</div>
+          <div class="rc-p-tg">t.me/ilmm_yolida</div>
+        </div>
+      </div>`;
+      const mount = (text, part, total) => { stage.innerHTML = cardHTML(text, part, total); return stage.firstElementChild; };
+      const fits = (el) => { const t = el.querySelector('.rc-p-text'), bd = el.querySelector('.rc-p-body'); return bd.scrollHeight <= bd.clientHeight + 1 && t.scrollHeight <= t.clientHeight + 1; };
+      const SIZES = [58, 54, 50, 46, 42, 38, 35, 32, 30, 28];
+      const SPLIT_PX = 32;                            /* bo‘linganda ham matn kamida shu o‘lchamda qoladi */
+      const fitSize = (el, minPx = 0) => { const t = el.querySelector('.rc-p-text'); for (const px of SIZES) { if (px < minPx) break; t.style.fontSize = px + 'px'; if (fits(el)) return px; } return 0; };
       try {
         await fontsReady();
-        const canvas = await html2canvas(stage.firstElementChild, { scale: 2, backgroundColor: '#fffdf7', useCORS: true });
-        const blob = await new Promise(res => canvas.toBlob(res, 'image/png'));
-        if (!blob) throw new Error('blob');
-        const name = `${i + 1}-kun-dalil.png`, file = new File([blob], name, { type: 'image/png' });
+        const full = String(d.summary || '').trim() || '—';
+        /* matnni sig‘dirish: avval shrift kichraytiriladi, sig‘masa bir nechta kartaga bo‘linadi */
+        let chunks = [full];
+        let el = mount(full, 1, 1);
+        if (!fitSize(el, SPLIT_PX)) {
+          const words = full.split(/(\s+)/);                  /* bo‘shliqlar saqlanadi */
+          chunks = []; let from = 0;
+          while (from < words.length && chunks.length < 6) {
+            let lo = 1, hi = words.length - from, best = 1;
+            while (lo <= hi) {
+              const mid = (lo + hi) >> 1;
+              const t = words.slice(from, from + mid).join('').trim();
+              const e = mount(t, 1, 2); const tx = e.querySelector('.rc-p-text'); tx.style.fontSize = SPLIT_PX + 'px';
+              if (fits(e)) { best = mid; lo = mid + 1; } else hi = mid - 1;
+            }
+            chunks.push(words.slice(from, from + best).join('').trim());
+            from += best;
+          }
+          if (chunks.length > 1 && from >= words.length) {        /* oxirgi karta deyarli bo‘sh qolmasin: bo‘laklarni tenglashtiramiz */
+            const n = chunks.length, per = Math.ceil(words.length / n); chunks = [];
+            for (let k = 0; k < n; k++) chunks.push(words.slice(k * per, (k + 1) * per).join('').trim());
+            chunks = chunks.filter(Boolean);
+          }
+        }
+        const files = [];
+        for (let k = 0; k < chunks.length; k++) {
+          el = mount(chunks[k], k + 1, chunks.length);
+          const img = el.querySelector('.rc-p-logo');
+          if (img && !img.complete) await new Promise(r => { img.onload = img.onerror = r; });
+          fitSize(el, SPLIT_PX);
+          const canvas = await html2canvas(el, { scale: 1, width: W, height: H, backgroundColor: '#0b3f31', useCORS: true });
+          const blob = await new Promise(res => canvas.toBlob(res, 'image/png'));
+          if (!blob) throw new Error('blob');
+          const name = chunks.length > 1 ? `${i + 1}-kun-dalil-${k + 1}.png` : `${i + 1}-kun-dalil.png`;
+          files.push(new File([blob], name, { type: 'image/png' }));
+        }
         const caption = `Ilm Yo‘lida | Mutolaa — ${i + 1}-kun tugallandi, ${d.pages} sahifa #${i + 1}kun_tugallandi`;
-        if (navigator.canShare && navigator.canShare({ files: [file] })) {
-          try { await navigator.share({ files: [file], title: `${i + 1}-kun — ${readerName()}`, text: caption }); return; }
+        if (navigator.canShare && navigator.canShare({ files })) {
+          try { await navigator.share({ files, title: `${i + 1}-kun — ${readerName()}`, text: caption }); return; }
           catch (err) { if (err && err.name === 'AbortError') return; }
         }
-        const url = URL.createObjectURL(blob); download(url, name); setTimeout(() => URL.revokeObjectURL(url), 4000);
-        toast('Dalil kartasi yuklab olindi — uni Telegram guruhidagi xabaringizga biriktiring.');
+        files.forEach((f, k) => { const url = URL.createObjectURL(f); setTimeout(() => { download(url, f.name); setTimeout(() => URL.revokeObjectURL(url), 4000); }, k * 400); });
+        toast(files.length > 1 ? `Dalil kartasi ${files.length} ta rasm bo‘lib yuklab olindi — hammasini Telegram guruhiga yuboring.` : 'Dalil kartasi yuklab olindi — uni Telegram guruhidagi xabaringizga biriktiring.');
       } catch { toast('Dalil kartasini yaratib bo‘lmadi. Qayta urinib ko‘ring.'); }
       finally { stage.remove(); }
     },
@@ -453,6 +511,9 @@
 .rc-app label.rc-newbook{flex-direction:row;align-items:center;gap:8px;font-size:.78rem;font-weight:600;text-transform:none;letter-spacing:0;color:var(--mut);cursor:pointer;margin-bottom:8px}
 .rc-newbook input{width:16px;height:16px;accent-color:var(--gold);flex-shrink:0}
 .rc-booktitle{margin-bottom:8px;font-style:italic}
+.rc-quote-box{display:grid;gap:8px;margin-top:10px}
+.rc-quote{min-height:54px;resize:vertical;font-size:.86rem!important;font-style:italic}
+.rc-quote-by{font-size:.86rem!important}
 .rc-summary{min-height:70px;resize:vertical;font-size:.88rem!important}
 .rc-share:empty{display:none}
 .rc-share{margin-top:10px}
@@ -498,20 +559,36 @@
 .rc-actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
 .rc-actions label.rc-btn{flex-direction:row}
 .rc-foot{text-align:center;color:var(--mut);font-size:.8rem;margin:16px 0 0}
-.rc-proof{width:520px;background:#fffdf7;color:#17332b;padding:34px;position:relative;border:2px solid #b8934a;font-family:Inter,sans-serif}
-.rc-proof::before{content:"";position:absolute;inset:8px;border:1px solid #b8934a;pointer-events:none}
-.rc-proof>*{position:relative}
-.rc-proof-brand{font-size:10px;letter-spacing:2px;color:#b8934a;font-weight:800;margin-bottom:6px}
-.rc-proof-day{font-family:"Cormorant Garamond",Georgia,serif;font-weight:700;font-size:34px;color:#07543f;margin-bottom:16px}
-.rc-proof-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid #ecdcae;font-size:14px}
-.rc-proof-lbl{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#b8934a;font-weight:800}
-.rc-proof-val{font-weight:700}
-.rc-proof-gap{margin:20px 0 6px}
-.rc-proof-book{font-family:"Cormorant Garamond",Georgia,serif;font-style:italic;font-weight:700;font-size:20px;color:#07543f;margin-bottom:10px}
-.rc-proof-summary{font-family:"Cormorant Garamond",Georgia,serif;font-size:19px;line-height:1.55;color:#2a3a33;overflow-wrap:anywhere;white-space:pre-wrap}
-.rc-proof-foot{display:flex;justify-content:flex-end;border-top:1px solid #ecdcae;padding-top:14px;margin-top:20px}
-.rc-proof-name{font-family:"Cormorant Garamond",Georgia,serif;font-weight:700;font-size:19px;text-align:right}
-.rc-proof-name small{display:block;font-family:Inter,sans-serif;font-weight:500;font-size:10px;color:#8a9390;letter-spacing:.5px;text-transform:uppercase}
+.rc-p{position:relative;display:flex;flex-direction:column;background:#0b3f31;color:#17332b;font-family:Inter,Arial,sans-serif;overflow:hidden}
+.rc-p *{box-sizing:border-box;margin:0}
+.rc-p-head{display:flex;align-items:center;gap:26px;padding:48px 64px 40px;background:radial-gradient(120% 140% at 85% 0%,#0f6b52 0%,#07543f 45%,#063a2c 100%);position:relative}
+.rc-p-head::after{content:"";position:absolute;left:64px;right:64px;bottom:0;height:3px;background:linear-gradient(90deg,#b8934a,#e9d08c 50%,#b8934a)}
+.rc-p-logo{width:128px;height:128px;border-radius:50%;background:#fffdf7;padding:10px;object-fit:contain;box-shadow:0 0 0 4px #b8934a}
+.rc-p-brand{flex:1;display:flex;flex-direction:column;gap:10px}
+.rc-p-brand b{font-family:"Cormorant Garamond",Georgia,serif;font-size:50px;font-weight:700;letter-spacing:4px;color:#fffdf7;line-height:1}
+.rc-p-brand span{font-size:20px;letter-spacing:6px;font-weight:700;color:#e0c277}
+.rc-p-day{text-align:center;font-family:"Cormorant Garamond",Georgia,serif;font-weight:700;font-size:112px;line-height:.9;color:#e9d08c}
+.rc-p-day small{display:block;font-family:Inter,Arial,sans-serif;font-size:18px;letter-spacing:5px;color:#b8934a;margin-bottom:6px}
+.rc-p-day em{font-style:normal;font-size:34px;color:#b8934a;margin-left:4px}
+.rc-p-meta{display:flex;background:#063a2c;padding:24px 64px;gap:48px;border-bottom:1px solid rgba(184,147,74,.45)}
+.rc-p-meta div{display:flex;flex-direction:column;gap:6px}
+.rc-p-meta small{font-size:15px;letter-spacing:3px;font-weight:700;color:#b8934a}
+.rc-p-meta b{font-size:28px;font-weight:700;color:#fffdf7}
+.rc-p-body{flex:1;min-height:0;display:flex;flex-direction:column;background:#fffdf7;padding:44px 64px 30px;position:relative;overflow:hidden}
+.rc-p-body::before{content:"";position:absolute;inset:14px;border:2px solid #e3d2a0;pointer-events:none}
+.rc-p-book{font-family:"Cormorant Garamond",Georgia,serif;font-style:italic;font-weight:700;font-size:40px;line-height:1.15;color:#07543f}
+.rc-p-book small{display:block;font-family:Inter,Arial,sans-serif;font-style:normal;font-size:15px;letter-spacing:3px;color:#b8934a;margin-bottom:8px}
+.rc-p-rule{height:3px;width:120px;background:#b8934a;margin:22px 0 4px}
+.rc-p-q{font-family:"Cormorant Garamond",Georgia,serif;font-size:110px;line-height:.8;color:#e3d2a0;height:56px}
+.rc-p-quote{margin:26px 0 22px;padding:6px 0 6px 26px;border-left:6px solid #b8934a}
+.rc-p-quote-t{font-family:"Cormorant Garamond",Georgia,serif;font-style:italic;font-weight:600;font-size:34px;line-height:1.3;color:#07543f;overflow-wrap:anywhere}
+.rc-p-quote-by{margin-top:10px;font-size:19px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#b8934a}
+.rc-p-text{flex:1;min-height:0;overflow:hidden;font-family:"Cormorant Garamond",Georgia,serif;font-weight:600;font-size:40px;line-height:1.38;color:#1f332b;overflow-wrap:anywhere;white-space:pre-wrap}
+.rc-p-foot{display:flex;justify-content:space-between;align-items:center;padding:30px 64px 36px;background:linear-gradient(180deg,#07543f,#063a2c);position:relative}
+.rc-p-foot::before{content:"";position:absolute;left:64px;right:64px;top:0;height:3px;background:linear-gradient(90deg,#b8934a,#e9d08c 50%,#b8934a)}
+.rc-p-name{font-family:"Cormorant Garamond",Georgia,serif;font-weight:700;font-size:44px;color:#fffdf7;line-height:1.1}
+.rc-p-name small{display:block;font-family:Inter,Arial,sans-serif;font-size:15px;letter-spacing:3px;color:#b8934a;margin-bottom:6px}
+.rc-p-tg{font-size:26px;font-weight:700;letter-spacing:1px;color:#e0c277}
 #rc-toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,20px);max-width:min(92vw,460px);background:#07543f;color:#fff;border-radius:12px;padding:12px 18px;font:600 .88rem/1.45 Inter,system-ui,sans-serif;box-shadow:0 14px 40px rgba(0,0,0,.28);opacity:0;pointer-events:none;transition:.3s;z-index:9999}
 #rc-toast.show{opacity:1;transform:translate(-50%,0)}
 @media(max-width:700px){.rc-stats{grid-template-columns:repeat(2,1fr)}.rc-grid2{grid-template-columns:1fr}.rc-cert-meta{flex-wrap:wrap;justify-content:center}.rc-cert-block{min-width:100px}}
