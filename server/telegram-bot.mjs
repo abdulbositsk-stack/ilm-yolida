@@ -96,6 +96,30 @@ export function createBot({ store, call, token = botToken(), now = () => Date.no
   const userKey = id => `user-${id}`;
   const getUser = id => store.get(userKey(id));
   const saveUser = user => store.setJSON(userKey(user.id), user);
+
+  /** Reyting jadvali bitta faylda saqlanadi, shuning uchun reyting/statistika uchun hamma foydalanuvchini o'qimaymiz. */
+  async function loadBoard() {
+    const saved = await store.get('board');
+    if (saved && saved.rows) return saved;
+    const rows = {};                                   // birinchi marta: mavjud foydalanuvchilardan bir martalik yig'ish
+    for await (const page of store.list()) for (const blob of page.blobs) {
+      if (!blob.key.startsWith('user-')) continue;
+      const u = await store.get(blob.key);
+      if (u) rows[u.id] = { first: u.first || '', n: countOf(u), r: !!u.rewarded, g: !!u.inGroup };
+    }
+    const board = { rows };
+    await store.setJSON('board', board);
+    return board;
+  }
+  async function updateBoard(user) {
+    const board = await loadBoard();
+    const row = { first: user.first || '', n: countOf(user), r: !!user.rewarded, g: !!user.inGroup };
+    const old = board.rows[user.id];
+    if (!row.n && !row.r && !row.g) { if (!old) return; delete board.rows[user.id]; }
+    else if (old && old.first === row.first && old.n === row.n && old.r === row.r && old.g === row.g) return;
+    else board.rows[user.id] = row;
+    await store.setJSON('board', board);
+  }
   const safeSend = async (chatId, text, extra = {}) => {
     try { return await call('sendMessage', { chat_id: chatId, text, parse_mode: 'HTML', disable_web_page_preview: true, ...extra }); }
     catch (error) { if (error.code !== 403 && error.code !== 400) console.error('[telegram] sendMessage', error.message); return null; }
@@ -116,9 +140,10 @@ export function createBot({ store, call, token = botToken(), now = () => Date.no
   async function upsertUser(from) {
     const existing = await getUser(from.id);
     const user = existing || { id: from.id, invitees: {}, rewarded: false, inGroup: false, createdAt: new Date(now()).toISOString() };
-    user.first = String(from.first_name || '').slice(0, 60);
-    user.username = from.username || '';
-    await saveUser(user);
+    const first = String(from.first_name || '').slice(0, 60), username = from.username || '';
+    const changed = !existing || user.first !== first || user.username !== username;
+    user.first = first; user.username = username;
+    if (changed) await saveUser(user);   // har xabarda yozmaymiz: Blob limiti tejaladi
     return user;
   }
 
@@ -161,7 +186,7 @@ export function createBot({ store, call, token = botToken(), now = () => Date.no
     try {
       const created = await call('createChatInviteLink', { chat_id: groupId, member_limit: 1, expire_date: Math.floor(now() / 1000) + 48 * 3600, name: `grp-${user.id}` });
       user.groupLink = created.invite_link; user.rewarded = true; user.groupLinkAt = new Date(now()).toISOString();
-      await saveUser(user);
+      await saveUser(user); await updateBoard(user);
       return safeSend(chatId, T.reward(created.invite_link), { reply_markup: keyboard([[{ text: '👥 Maxsus guruhga kirish', url: created.invite_link }]]) });
     } catch (error) {
       console.error('[telegram] group link', error.message);
@@ -171,26 +196,16 @@ export function createBot({ store, call, token = botToken(), now = () => Date.no
   }
 
   async function sendStats(chatId) {
-    let users = 0, active = 0, rewarded = 0, inGroup = 0;
-    for await (const page of store.list()) {
-      for (const blob of page.blobs) {
-        if (!blob.key.startsWith('user-')) continue;
-        const user = await store.get(blob.key); if (!user) continue;
-        users++; active += countOf(user); if (user.rewarded) rewarded++; if (user.inGroup) inGroup++;
-      }
-    }
+    let users = 0;
+    for await (const page of store.list()) for (const blob of page.blobs) if (blob.key.startsWith('user-')) users++;
+    const rows = Object.values((await loadBoard()).rows);
+    const active = rows.reduce((sum, r) => sum + r.n, 0), rewarded = rows.filter(r => r.r).length, inGroup = rows.filter(r => r.g).length;
     return safeSend(chatId, `📈 <b>Statistika</b>\n\nIshtirokchilar: <b>${users}</b>\nTaklif orqali kirganlar (hozir kanalda): <b>${active}</b>\nGuruh havolasi olganlar: <b>${rewarded}</b>\nGuruhga kirganlar: <b>${inGroup}</b>`);
   }
 
-  async function topList(limit = 10) {
-    const rows = [];
-    for await (const page of store.list()) {
-      for (const blob of page.blobs) {
-        if (!blob.key.startsWith('user-')) continue;
-        const user = await store.get(blob.key);
-        if (user) rows.push({ id: user.id, first: user.first, n: countOf(user) });
-      }
-    }
+  async function topList() {
+    const board = await loadBoard();
+    const rows = Object.entries(board.rows).map(([id, r]) => ({ id: Number(id), first: r.first, n: r.n }));
     rows.sort((a, b) => b.n - a.n);
     return { rows, ranked: rows.filter(r => r.n > 0) };
   }
@@ -260,6 +275,7 @@ export function createBot({ store, call, token = botToken(), now = () => Date.no
     const invitee = after.user;
     if (!invitee || invitee.is_bot) return;
 
+    console.log('[telegram] kanal a\'zoligi', JSON.stringify({ user: invitee.id, before: before?.status, after: after.status, link: invite ? { name: invite.name, creator: invite.creator?.id, hasLink: !!invite.invite_link } : null }));
     if (!wasIn && isIn) {
       const fromBot = invite && String(invite.creator?.id) === botId;
       const match = fromBot && /^ref-(\d+)$/.exec(invite.name || '');
@@ -270,13 +286,14 @@ export function createBot({ store, call, token = botToken(), now = () => Date.no
         const saved = await store.setJSON(`inv-${invitee.id}`, { inviter: inviterId, at: new Date(now()).toISOString() }, { onlyIfNew: true });
         if (!saved.modified) inviterId = (await store.get(`inv-${invitee.id}`))?.inviter ?? null;
       } else inviterId = null;                              // havolasiz yoki o'zini o'zi taklif qilgan
+      console.log('[telegram] taklif qiluvchi', JSON.stringify({ inviterId, hadRecord: !!record, fromBot: !!fromBot }));
       if (!inviterId || inviterId === invitee.id) return;
       const inviter = await getUser(inviterId);
-      if (!inviter) return;
+      if (!inviter) { console.log('[telegram] taklif qiluvchi topilmadi', inviterId); return; }
       inviter.invitees = inviter.invitees || {};
       const already = inviter.invitees[invitee.id] === true;
       inviter.invitees[invitee.id] = true;
-      await saveUser(inviter);
+      await saveUser(inviter); await updateBoard(inviter);
       if (already) return;
       const n = countOf(inviter);
       await safeSend(inviterId, T.joined(invitee.first_name || 'Do‘stingiz', n), { reply_markup: mainButtons(inviter.link || channelUrl(), n) });
@@ -285,7 +302,7 @@ export function createBot({ store, call, token = botToken(), now = () => Date.no
       const record = await store.get(`inv-${invitee.id}`);
       if (!record) return;
       const inviter = await getUser(record.inviter);
-      if (inviter?.invitees?.[invitee.id]) { inviter.invitees[invitee.id] = false; await saveUser(inviter); }
+      if (inviter?.invitees?.[invitee.id]) { inviter.invitees[invitee.id] = false; await saveUser(inviter); await updateBoard(inviter); }
     }
   }
 
@@ -296,7 +313,7 @@ export function createBot({ store, call, token = botToken(), now = () => Date.no
     if (!user) return;
     const isIn = MEMBER.has(after.status) || (after.status === 'restricted' && after.is_member);
     if (user.inGroup !== isIn) {
-      user.inGroup = isIn; await saveUser(user);
+      user.inGroup = isIn; await saveUser(user); await updateBoard(user);
       if (isIn) await safeSend(update.chat.id, T.groupWelcome(user.first || after.user.first_name || 'do‘st'));
     }
   }
@@ -319,7 +336,12 @@ export function createBot({ store, call, token = botToken(), now = () => Date.no
         const groupId = await getGroupId();
         if (groupId && String(chat.id) === String(groupId)) return await onGroupMember(update.chat_member);
       }
-    } catch (error) { console.error('[telegram] update xatosi', error); }
+    } catch (error) {
+      console.error('[telegram] update xatosi', error);
+      const m = update.message, q = update.callback_query;
+      const chat = m?.chat?.type === 'private' ? m.chat.id : (q?.message?.chat?.type === 'private' ? q.message.chat.id : null);
+      if (chat) await safeSend(chat, '⏳ Hozir texnik ishlar ketmoqda. Iltimos, birozdan keyin qayta urinib ko‘ring.');
+    }
     return undefined;
   }
 

@@ -30,10 +30,15 @@ function vercelBlobStore(name) {
     async delete(key) {
       await del(pathname(key), { access: 'private' });
     },
-    async *list() {
+    async *list(options = {}) {
       let cursor;
       do {
         const page = await list({ prefix, cursor, limit: 1000 });
+        if (!options.metadata) {   // har bir faylni o'qimaymiz: Blob "simple operations" limitini tejaydi
+          yield { blobs: page.blobs.map(blob => ({ key: blob.pathname.slice(prefix.length).replace(/\.json$/, ''), metadata: {} })) };
+          cursor = page.hasMore ? page.cursor : undefined;
+          continue;
+        }
         const blobs = await Promise.all(page.blobs.map(async blob => {
           const result = await get(blob.pathname, { access: 'private', useCache: false });
           let saved = null;

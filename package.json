@@ -3,7 +3,7 @@
   "private": true,
   "scripts": {
     "build": "node scripts/build.cjs",
-    "test": "node tests/app-smoke.cjs && node tests/app-dom.cjs && node tests/access-api.mjs && node tests/telegram-bot.mjs",
+    "test": "node tests/app-smoke.cjs && node tests/app-dom.cjs && node tests/access-api.mjs && node tests/telegram-bot.mjs && node tests/redis-store.mjs",
     "start": "node scripts/serve.cjs"
   },
   "devDependencies": {
