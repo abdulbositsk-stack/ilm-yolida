@@ -13,8 +13,9 @@
   const MONL = ['yanvar', 'fevral', 'mart', 'aprel', 'may', 'iyun', 'iyul', 'avgust', 'sentabr', 'oktabr', 'noyabr', 'dekabr'];
   const short = d => `${d.getDate()}-${MON[d.getMonth()]}`;
   const long = d => `${d.getDate()}-${MONL[d.getMonth()]}, ${d.getFullYear()}`;
-  const blankDay = () => ({ done: false, pages: GOAL, summary: '', dateStamp: '', book: '', newBook: false, quote: '', quoteBy: '' });
-  const fresh = () => ({ v: 1, name: '', book: '', start: ymd(new Date()), days: Array.from({ length: TOTAL }, blankDay) });
+  const MAX_EXTRA = 3;
+  const blankDay = () => ({ done: false, pages: GOAL, summary: '', dateStamp: '', book: '', author: '', newBook: false, quote: '', quoteBy: '', extra: [] });
+  const fresh = () => ({ v: 1, name: '', book: '', author: '', start: ymd(new Date()), days: Array.from({ length: TOTAL }, blankDay) });
 
   const clean = raw => {
     if (!raw || typeof raw !== 'object' || !Array.isArray(raw.days) || raw.days.length !== TOTAL) return null;
@@ -22,6 +23,7 @@
       v: 1,
       name: String(raw.name ?? '').slice(0, 80),
       book: String(raw.book ?? '').slice(0, 140),
+      author: String(raw.author ?? '').slice(0, 100),
       start: parse(raw.start) ? raw.start : ymd(new Date()),
       days: raw.days.map(d => {
         d = d && typeof d === 'object' ? d : {};
@@ -32,8 +34,10 @@
           summary: String(d.summary ?? '').slice(0, 2000),
           dateStamp: parse(d.dateStamp) ? d.dateStamp : '',
           book: String(d.book ?? '').slice(0, 140),
+          author: String(d.author ?? '').slice(0, 100),
           newBook: Boolean(d.newBook),
           quote: String(d.quote ?? '').slice(0, 400),
+          extra: (Array.isArray(d.extra) ? d.extra : []).slice(0, MAX_EXTRA).map(e => ({ title: String(e && e.title || '').slice(0, 60), text: String(e && e.text || '').slice(0, 2000) })),
           quoteBy: String(d.quoteBy ?? '').slice(0, 80),
         };
       }),
@@ -76,6 +80,11 @@
     for (let j = 0; j <= i; j++) { const d = S.days[j]; if (d.newBook && d.book.trim()) cur = d.book.trim(); }
     return cur;
   };
+  const authorForDay = i => {
+    let cur = S.author.trim();
+    for (let j = 0; j <= i; j++) { const d = S.days[j]; if (d.newBook && d.book.trim()) cur = d.author.trim(); }
+    return cur;
+  };
   const joinNames = a => a.length < 2 ? a.join('') : a.slice(0, -1).join(', ') + ' va ' + a[a.length - 1];
   const summarized = () => S.days.every(d => d.summary.trim());
   const unlocked = () => S.days.every(d => d.done) && summarized();
@@ -107,7 +116,16 @@
   const shareBtn = i => {
     const d = S.days[i];
     return d.done && d.summary.trim()
-      ? `<button type="button" class="rc-share-btn" onclick="rcShare(${i})">📤 Xulosani guruhga yuborish</button>` : '';
+      ? `<button type="button" class="rc-share-btn" onclick="rcShare(${i})">👁 Kartani ko‘rish va yuborish</button>` : '';
+  };
+
+  const extrasHTML = i => {
+    const d = S.days[i];
+    return d.extra.map((e, k) => `<div class="rc-extra">
+        <div class="rc-extra-top"><b>${k + 2}-xulosa · alohida rasm</b><button type="button" class="rc-extra-x" onclick="rcExtraDel(${i},${k})" aria-label="${k + 2}-xulosani o‘chirish">✕</button></div>
+        <input class="rc-extra-title" type="text" maxlength="60" value="${esc(e.title)}" placeholder="Mavzu (ixtiyoriy) — masalan: Odatlar" oninput="rcExtra(${i},${k},'title',this.value)" aria-label="${k + 2}-xulosa mavzusi">
+        <textarea class="rc-summary" maxlength="2000" placeholder="Boshqa mavzu bo‘yicha xulosa…" oninput="rcExtra(${i},${k},'text',this.value)" aria-label="${k + 2}-xulosa matni">${esc(e.text)}</textarea>
+      </div>`).join('') + (d.extra.length < MAX_EXTRA ? `<button type="button" class="rc-extra-add" onclick="rcExtraAdd(${i})">➕ Yana xulosa qo‘shish (alohida rasm)</button>` : '');
   };
 
   const dayHTML = i => {
@@ -124,8 +142,9 @@
         <span>sahifa o‘qildi</span>
       </div>
       <label class="rc-newbook"><input type="checkbox" ${d.newBook ? 'checked' : ''} onchange="rcNewBook(${i},this.checked)"><span>Kitobni tugatdim — bugun yangisini boshladim</span></label>
-      ${d.newBook ? `<input class="rc-booktitle" type="text" maxlength="140" value="${esc(d.book)}" placeholder="Yangi kitob nomi" oninput="rcBookTitle(${i},this.value)" aria-label="Yangi kitob nomi">` : ''}
+      ${d.newBook ? `<input class="rc-booktitle" type="text" maxlength="140" value="${esc(d.book)}" placeholder="Yangi kitob nomi" oninput="rcBookTitle(${i},this.value)" aria-label="Yangi kitob nomi"><input class="rc-booktitle" type="text" maxlength="100" value="${esc(d.author)}" placeholder="Yangi kitob muallifi" oninput="rcBookAuthor(${i},this.value)" aria-label="Yangi kitob muallifi">` : ''}
       <textarea class="rc-summary" maxlength="2000" placeholder="Qisqa xulosa (3–5 gap): nimani o‘qidim, eng muhim fikr nima, menga nima beradi?" oninput="rcSummary(${i},this.value)" aria-label="${i + 1}-kun xulosasi">${esc(d.summary)}</textarea>
+      <div class="rc-extras" id="rc-extras-${i}">${extrasHTML(i)}</div>
       <div class="rc-quote-box">
         <textarea class="rc-quote" maxlength="400" placeholder="Iqtibos (ixtiyoriy) — kitobdan yoqqan jumla" oninput="rcQuote(${i},'quote',this.value)" aria-label="${i + 1}-kun iqtibosi (ixtiyoriy)">${esc(d.quote)}</textarea>
         <input class="rc-quote-by" type="text" maxlength="80" value="${esc(d.quoteBy)}" placeholder="Muallif (ixtiyoriy)" oninput="rcQuote(${i},'quoteBy',this.value)" aria-label="${i + 1}-kun iqtibos muallifi">
@@ -171,6 +190,7 @@
     <div class="rc-grid2">
       <label>Ism<input type="text" maxlength="80" value="${esc(S.name)}" placeholder="${esc(profileName() || 'Ismingiz')}" oninput="rcField('name',this.value)"></label>
       <label>Hozirgi kitob<input type="text" maxlength="140" value="${esc(S.book)}" placeholder="O‘qiyotgan kitobingiz nomi" oninput="rcField('book',this.value)"></label>
+      <label>Kitob muallifi<input type="text" maxlength="100" value="${esc(S.author)}" placeholder="Masalan: James Clear" oninput="rcField('author',this.value)"></label>
       <label>Boshlanish sanasi<input type="date" value="${esc(S.start)}" onchange="rcStart(this.value)"></label>
       <label>Tugash sanasi<input type="date" id="rc-end" value="${endDate() ? ymd(endDate()) : ''}" readonly></label>
     </div>
@@ -277,9 +297,14 @@
   const download = (href, name) => { const a = document.createElement('a'); a.href = href; a.download = name; document.body.appendChild(a); a.click(); a.remove(); };
   const fontsReady = () => (document.fonts && document.fonts.ready ? document.fonts.ready.catch(() => {}) : Promise.resolve());
 
+  let rcPrev = null, rcPrevDay = 0;
+  const captionFor = i => {
+    const d = S.days[i], book = bookForDay(i);
+    return `📖 ${i + 1}-kun | ${readerName()}\n${book ? `Kitob: ${book}${authorForDay(i) ? ' — ' + authorForDay(i) : ''}\n` : ''}📄 Bugun: ${d.pages} sahifa\n${d.extra.filter(e => e.text.trim() && e.title.trim()).length ? 'Mavzular: ' + d.extra.filter(e => e.text.trim() && e.title.trim()).map(e => e.title.trim()).join(', ') + '\n' : ''}\n#${i + 1}kun_tugallandi #IlmYolidaMutolaa`;
+  };
   /* ---------- harakatlar ---------- */
   Object.assign(window, {
-    rcField(field, value) { S[field] = String(value).slice(0, field === 'name' ? 80 : 140); save(); refresh(); },
+    rcField(field, value) { S[field] = String(value).slice(0, field === 'name' ? 80 : field === 'author' ? 100 : 140); save(); refresh(); },
     rcStart(value) {
       if (!parse(value)) return;
       S.start = value; save();
@@ -299,22 +324,25 @@
       setHTML('rc-share-' + i, shareBtn(i)); refresh();
     },
     rcNewBook(i, checked) {
-      const d = S.days[i]; d.newBook = checked; if (!checked) d.book = '';
+      const d = S.days[i]; d.newBook = checked; if (!checked) { d.book = ''; d.author = ''; }
       save(); repaintDay(i); certSig = ''; refresh();
     },
+    rcExtraAdd(i) { const d = S.days[i]; if (d.extra.length >= MAX_EXTRA) return; d.extra.push({ title: '', text: '' }); save(); setHTML('rc-extras-' + i, extrasHTML(i)); },
+    rcExtraDel(i, k) { S.days[i].extra.splice(k, 1); save(); setHTML('rc-extras-' + i, extrasHTML(i)); },
+    rcExtra(i, k, field, value) { const e = S.days[i].extra[k]; if (!e) return; e[field] = String(value).slice(0, field === 'title' ? 60 : 2000); save(); },
     rcQuote(i, field, value) { S.days[i][field] = String(value).slice(0, field === 'quote' ? 400 : 80); save(); },
+    rcBookAuthor(i, value) { S.days[i].author = String(value).slice(0, 100); save(); },
     rcBookTitle(i, value) { S.days[i].book = String(value).slice(0, 140); save(); refresh(); },
-    async rcShare(i) {
+    async rcBuild(i) {
       const d = S.days[i];
-      if (typeof html2canvas === 'undefined') { toast('Dalil kartasini yaratish uchun internet aloqasi kerak.'); return; }
-      toast('Dalil kartasi tayyorlanmoqda…');
+      if (typeof html2canvas === 'undefined') { toast('Dalil kartasini yaratish uchun internet aloqasi kerak.'); return null; }
       const date = dayDate(i);
       const hasQuote = !!(d.quote || '').trim();
       const W = 1080, H = 1350;                       /* 4:5 — Telegram 1280 px dan oshmasa qayta siqmaydi */
       const stage = document.createElement('div');
       stage.style.cssText = 'position:fixed;left:-9999px;top:0';
       document.body.appendChild(stage);
-      const cardHTML = (text, part, total) => `<div class="rc-p" style="width:${W}px;height:${H}px">
+      const cardHTML = (item, part, total) => `<div class="rc-p" style="width:${W}px;height:${H}px">
         <div class="rc-p-head">
           <img class="rc-p-logo" src="./assets/ilm-yolida-logo.png" alt="">
           <div class="rc-p-brand"><b>ILM YO‘LIDA</b><span>MUTOLAA CHALLENGE</span></div>
@@ -326,68 +354,90 @@
           ${total > 1 ? `<div><small>QISM</small><b>${part} / ${total}</b></div>` : ''}
         </div>
         <div class="rc-p-body">
-          <div class="rc-p-book"><small>KITOB</small>${esc(bookForDay(i) || 'Kitob nomi kiritilmagan')}</div>
+          <div class="rc-p-book"><small>KITOB</small>${esc(bookForDay(i) || 'Kitob nomi kiritilmagan')}${authorForDay(i) ? `<span class="rc-p-author">${esc(authorForDay(i))}</span>` : ''}</div>
           <div class="rc-p-rule"></div>
           ${hasQuote && part === 1 ? `<div class="rc-p-quote"><div class="rc-p-quote-t">“${esc(d.quote.trim())}”</div>${d.quoteBy.trim() ? `<div class="rc-p-quote-by">— ${esc(d.quoteBy.trim())}</div>` : ''}</div>` : '<div class="rc-p-q">“</div>'}
-          <div class="rc-p-text">${esc(text)}</div>
+          ${item.title ? `<div class="rc-p-topic">${esc(item.title)}</div>` : ''}
+          <div class="rc-p-text">${esc(item.text)}</div>
         </div>
         <div class="rc-p-foot">
           <div class="rc-p-name"><small>O‘QUVCHI</small>${esc(readerName())}</div>
           <div class="rc-p-tg">t.me/ilmm_yolida</div>
         </div>
       </div>`;
-      const mount = (text, part, total) => { stage.innerHTML = cardHTML(text, part, total); return stage.firstElementChild; };
+      const mount = (item, part, total) => { stage.innerHTML = cardHTML(item, part, total); return stage.firstElementChild; };
       const fits = (el) => { const t = el.querySelector('.rc-p-text'), bd = el.querySelector('.rc-p-body'); return bd.scrollHeight <= bd.clientHeight + 1 && t.scrollHeight <= t.clientHeight + 1; };
       const SIZES = [58, 54, 50, 46, 42, 38, 35, 32, 30, 28];
-      const SPLIT_PX = 32;                            /* bo‘linganda ham matn kamida shu o‘lchamda qoladi */
       const fitSize = (el, minPx = 0) => { const t = el.querySelector('.rc-p-text'); for (const px of SIZES) { if (px < minPx) break; t.style.fontSize = px + 'px'; if (fits(el)) return px; } return 0; };
       try {
         await fontsReady();
-        const full = String(d.summary || '').trim() || '—';
-        /* matnni sig‘dirish: avval shrift kichraytiriladi, sig‘masa bir nechta kartaga bo‘linadi */
-        let chunks = [full];
-        let el = mount(full, 1, 1);
-        if (!fitSize(el, SPLIT_PX)) {
-          const words = full.split(/(\s+)/);                  /* bo‘shliqlar saqlanadi */
-          chunks = []; let from = 0;
-          while (from < words.length && chunks.length < 6) {
-            let lo = 1, hi = words.length - from, best = 1;
-            while (lo <= hi) {
-              const mid = (lo + hi) >> 1;
-              const t = words.slice(from, from + mid).join('').trim();
-              const e = mount(t, 1, 2); const tx = e.querySelector('.rc-p-text'); tx.style.fontSize = SPLIT_PX + 'px';
-              if (fits(e)) { best = mid; lo = mid + 1; } else hi = mid - 1;
-            }
-            chunks.push(words.slice(from, from + best).join('').trim());
-            from += best;
-          }
-          if (chunks.length > 1 && from >= words.length) {        /* oxirgi karta deyarli bo‘sh qolmasin: bo‘laklarni tenglashtiramiz */
-            const n = chunks.length, per = Math.ceil(words.length / n); chunks = [];
-            for (let k = 0; k < n; k++) chunks.push(words.slice(k * per, (k + 1) * per).join('').trim());
-            chunks = chunks.filter(Boolean);
-          }
-        }
+        /* Har bir xulosa — alohida rasm. Avtomatik bo‘linmaydi: sig‘masa shrift kichrayadi, baribir sig‘masa ogohlantiriladi */
+        const items = [{ title: '', text: String(d.summary || '').trim() || '—' }]
+          .concat(d.extra.filter(e => e.text.trim()).map(e => ({ title: e.title.trim(), text: e.text.trim() })));
+        let el, clipped = [];
         const files = [];
-        for (let k = 0; k < chunks.length; k++) {
-          el = mount(chunks[k], k + 1, chunks.length);
+        for (let k = 0; k < items.length; k++) {
+          el = mount(items[k], k + 1, items.length);
           const img = el.querySelector('.rc-p-logo');
           if (img && !img.complete) await new Promise(r => { img.onload = img.onerror = r; });
-          fitSize(el, SPLIT_PX);
+          if (!fitSize(el, 28)) clipped.push(k + 1);
           const canvas = await html2canvas(el, { scale: 1, width: W, height: H, backgroundColor: '#0b3f31', useCORS: true });
           const blob = await new Promise(res => canvas.toBlob(res, 'image/png'));
           if (!blob) throw new Error('blob');
-          const name = chunks.length > 1 ? `${i + 1}-kun-dalil-${k + 1}.png` : `${i + 1}-kun-dalil.png`;
+          const name = items.length > 1 ? `${i + 1}-kun-dalil-${k + 1}.png` : `${i + 1}-kun-dalil.png`;
           files.push(new File([blob], name, { type: 'image/png' }));
         }
-        const caption = `Ilm Yo‘lida | Mutolaa — ${i + 1}-kun tugallandi, ${d.pages} sahifa #${i + 1}kun_tugallandi`;
-        if (navigator.canShare && navigator.canShare({ files })) {
-          try { await navigator.share({ files, title: `${i + 1}-kun — ${readerName()}`, text: caption }); return; }
-          catch (err) { if (err && err.name === 'AbortError') return; }
-        }
-        files.forEach((f, k) => { const url = URL.createObjectURL(f); setTimeout(() => { download(url, f.name); setTimeout(() => URL.revokeObjectURL(url), 4000); }, k * 400); });
-        toast(files.length > 1 ? `Dalil kartasi ${files.length} ta rasm bo‘lib yuklab olindi — hammasini Telegram guruhiga yuboring.` : 'Dalil kartasi yuklab olindi — uni Telegram guruhidagi xabaringizga biriktiring.');
-      } catch { toast('Dalil kartasini yaratib bo‘lmadi. Qayta urinib ko‘ring.'); }
+        const urls = files.map(f => URL.createObjectURL(f));
+        return { files, urls, clipped };
+      } catch { toast('Dalil kartasini yaratib bo‘lmadi. Qayta urinib ko‘ring.'); return null; }
       finally { stage.remove(); }
+    },
+    /* Ko‘rib chiqish oynasi: karta aynan guruhga ketadigan ko‘rinishda chiqadi, caption tahrirlanadi */
+    async rcShare(i) {
+      const d = S.days[i];
+      toast('Dalil kartasi tayyorlanmoqda…');
+      const built = await window.rcBuild(i);
+      if (!built) return;
+      rcPrev = built; rcPrevDay = i;
+      const old = document.getElementById('rc-prev'); if (old) old.remove();
+      const wrap = document.createElement('div');
+      wrap.innerHTML = `<div class="rc-modal-back" id="rc-prev" onclick="if(event.target===this)rcPreviewClose()">
+        <div class="rc-modal rc-prev" role="dialog" aria-modal="true" aria-label="Dalil kartasini ko‘rib chiqish">
+          <button type="button" class="rc-modal-x" onclick="rcPreviewClose()" aria-label="Yopish">✕</button>
+          <h2>Kartani ko‘rib chiqing</h2>
+          <p class="rc-prev-hint">Guruhga aynan shu ko‘rinishda ketadi. Xato bo‘lsa «Tahrirlash» ni bosing, matnni tuzating va qayta oching.</p>
+          ${built.clipped && built.clipped.length ? `<p class="rc-prev-warn">⚠️ ${built.clipped.join(', ')}-rasmda matn sig‘madi. «Tahrirlash» ni bosing va «➕ Yana xulosa qo‘shish» orqali matnni bo‘lib yozing.</p>` : ''}
+          <div class="rc-prev-imgs">${built.urls.map((u, k) => `<img src="${u}" alt="${i + 1}-kun dalil kartasi ${k + 1}">`).join('')}</div>
+          <label class="rc-prev-lbl" for="rc-prev-cap">Guruhdagi xabar matni (tahrirlash mumkin)</label>
+          <textarea id="rc-prev-cap" rows="5"></textarea>
+          <div class="rc-prev-btns">
+            <button type="button" class="rc-btn" onclick="rcPreviewClose()">✏️ Tahrirlash</button>
+            <button type="button" class="rc-btn" onclick="rcCopyCaption()">📋 Matnni nusxalash</button>
+            <button type="button" class="rc-btn primary" onclick="rcPreviewSend()">📤 Guruhga yuborish</button>
+          </div>
+        </div></div>`;
+      document.body.appendChild(wrap.firstElementChild);
+      document.getElementById('rc-prev-cap').value = captionFor(i);
+    },
+    rcPreviewClose() {
+      const e = document.getElementById('rc-prev'); if (e) e.remove();
+      if (rcPrev) { rcPrev.urls.forEach(u => URL.revokeObjectURL(u)); rcPrev = null; }
+    },
+    async rcCopyCaption() {
+      const t = document.getElementById('rc-prev-cap'); if (!t) return;
+      try { await navigator.clipboard.writeText(t.value); toast('Matn nusxalandi — Telegramda rasm ostiga qo‘ying.'); }
+      catch { t.select(); document.execCommand && document.execCommand('copy'); toast('Matn nusxalandi.'); }
+    },
+    async rcPreviewSend() {
+      if (!rcPrev) return;
+      const i = rcPrevDay, files = rcPrev.files, caption = (document.getElementById('rc-prev-cap') || {}).value || captionFor(i);
+      if (navigator.canShare && navigator.canShare({ files })) {
+        try { await navigator.share({ files, title: `${i + 1}-kun — ${readerName()}`, text: caption }); window.rcPreviewClose(); return; }
+        catch (err) { if (err && err.name === 'AbortError') return; }
+      }
+      files.forEach((f, k) => { const url = URL.createObjectURL(f); setTimeout(() => { download(url, f.name); setTimeout(() => URL.revokeObjectURL(url), 4000); }, k * 400); });
+      try { await navigator.clipboard.writeText(caption); } catch {}
+      toast(files.length > 1 ? `${files.length} ta rasm yuklab olindi, matn nusxalandi — hammasini Telegram guruhiga yuboring.` : 'Rasm yuklab olindi, matn nusxalandi — Telegram guruhiga yuboring.');
     },
     async rcCertDownload() {
       const src = document.getElementById('rc-certificate'); if (!src) return;
@@ -511,6 +561,11 @@
 .rc-app label.rc-newbook{flex-direction:row;align-items:center;gap:8px;font-size:.78rem;font-weight:600;text-transform:none;letter-spacing:0;color:var(--mut);cursor:pointer;margin-bottom:8px}
 .rc-newbook input{width:16px;height:16px;accent-color:var(--gold);flex-shrink:0}
 .rc-booktitle{margin-bottom:8px;font-style:italic}
+.rc-extras{display:grid;gap:10px;margin-top:10px}
+.rc-extra{border:1px dashed #d9c68f;border-radius:14px;padding:10px;display:grid;gap:8px;background:#fffdf5}
+.rc-extra-top{display:flex;justify-content:space-between;align-items:center;font-size:.82rem;color:#8a6d2b}
+.rc-extra-x{border:0;background:#f1e6cc;border-radius:50%;width:26px;height:26px;cursor:pointer}
+.rc-extra-add{border:1px dashed #b8934a;background:transparent;color:#8a6d2b;border-radius:12px;padding:9px;font-weight:700;cursor:pointer;font-size:.86rem}
 .rc-quote-box{display:grid;gap:8px;margin-top:10px}
 .rc-quote{min-height:54px;resize:vertical;font-size:.86rem!important;font-style:italic}
 .rc-quote-by{font-size:.86rem!important}
@@ -578,11 +633,13 @@
 .rc-p-body::before{content:"";position:absolute;inset:14px;border:2px solid #e3d2a0;pointer-events:none}
 .rc-p-book{font-family:"Cormorant Garamond",Georgia,serif;font-style:italic;font-weight:700;font-size:40px;line-height:1.15;color:#07543f}
 .rc-p-book small{display:block;font-family:Inter,Arial,sans-serif;font-style:normal;font-size:15px;letter-spacing:3px;color:#b8934a;margin-bottom:8px}
+.rc-p-author{display:block;margin-top:8px;font-family:Inter,Arial,sans-serif;font-style:normal;font-weight:600;font-size:22px;letter-spacing:1px;color:#8a6d2b}
 .rc-p-rule{height:3px;width:120px;background:#b8934a;margin:22px 0 4px}
 .rc-p-q{font-family:"Cormorant Garamond",Georgia,serif;font-size:110px;line-height:.8;color:#e3d2a0;height:56px}
 .rc-p-quote{margin:26px 0 22px;padding:6px 0 6px 26px;border-left:6px solid #b8934a}
 .rc-p-quote-t{font-family:"Cormorant Garamond",Georgia,serif;font-style:italic;font-weight:600;font-size:34px;line-height:1.3;color:#07543f;overflow-wrap:anywhere}
 .rc-p-quote-by{margin-top:10px;font-size:19px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#b8934a}
+.rc-p-topic{font-family:Inter,Arial,sans-serif;font-weight:800;font-size:24px;letter-spacing:3px;text-transform:uppercase;color:#07543f;margin:6px 0 10px}
 .rc-p-text{flex:1;min-height:0;overflow:hidden;font-family:"Cormorant Garamond",Georgia,serif;font-weight:600;font-size:40px;line-height:1.38;color:#1f332b;overflow-wrap:anywhere;white-space:pre-wrap}
 .rc-p-foot{display:flex;justify-content:space-between;align-items:center;padding:30px 64px 36px;background:linear-gradient(180deg,#07543f,#063a2c);position:relative}
 .rc-p-foot::before{content:"";position:absolute;left:64px;right:64px;top:0;height:3px;background:linear-gradient(90deg,#b8934a,#e9d08c 50%,#b8934a)}
@@ -625,6 +682,15 @@
 .rc-modal{position:relative;background:#fffaf0;color:#2b2314;border-radius:20px;max-width:540px;width:100%;max-height:90vh;overflow:auto;padding:26px 24px;box-shadow:0 24px 60px rgba(0,0,0,.3)}
 .rc-modal h2{margin:6px 0 8px;font-family:"Cormorant Garamond",Georgia,serif;font-size:1.7rem}
 .rc-modal h3{margin:18px 0 6px;font-size:1rem}
+.rc-prev{max-width:620px}
+.rc-prev-hint{font-size:.88rem;color:#6b5d3a;margin:0 0 12px}
+.rc-prev-imgs{display:grid;gap:12px;margin-bottom:14px}
+.rc-prev-imgs img{width:100%;height:auto;border-radius:10px;box-shadow:0 6px 22px rgba(0,0,0,.22)}
+.rc-prev-warn{background:#fff1d6;border:1px solid #e0b25a;color:#6b4a0a;border-radius:10px;padding:10px 12px;font-size:.88rem;margin:0 0 12px}
+.rc-prev-lbl{display:block;font-size:.8rem;font-weight:700;color:#8a6d2b;margin-bottom:6px}
+#rc-prev-cap{width:100%;border:1px solid #e3d2a0;border-radius:12px;padding:10px 12px;font:inherit;font-size:.9rem;background:#fff;resize:vertical}
+.rc-prev-btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.rc-prev-btns .rc-btn{flex:1 1 150px}
 .rc-modal-x{position:absolute;right:12px;top:12px;border:0;background:#f1e6cc;border-radius:50%;width:32px;height:32px;cursor:pointer;font-size:1rem}
 .rc-info-list{margin:0;padding-left:20px;line-height:1.7;font-size:.92rem}
 .rc-info-note{font-size:.84rem;opacity:.75;margin:10px 0 0}
