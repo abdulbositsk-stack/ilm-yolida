@@ -14,7 +14,7 @@
   const short = d => `${d.getDate()}-${MON[d.getMonth()]}`;
   const long = d => `${d.getDate()}-${MONL[d.getMonth()]}, ${d.getFullYear()}`;
   const MAX_EXTRA = 3;
-  const blankDay = () => ({ done: false, pages: GOAL, summary: '', dateStamp: '', book: '', author: '', newBook: false, quote: '', quoteBy: '', extra: [] });
+  const blankDay = () => ({ done: false, pages: GOAL, summary: '', format: '', voice: null, dateStamp: '', book: '', author: '', newBook: false, quote: '', quoteBy: '', extra: [] });
   const fresh = () => ({ v: 1, name: '', book: '', author: '', start: ymd(new Date()), days: Array.from({ length: TOTAL }, blankDay) });
 
   const clean = raw => {
@@ -32,6 +32,8 @@
           done: Boolean(d.done),
           pages: Number.isFinite(pages) ? Math.max(0, Math.min(9999, Math.floor(pages))) : GOAL,
           summary: String(d.summary ?? '').slice(0, 2000),
+          format: ['voice', 'text', 'poster'].includes(d.format) ? d.format : (d.summary ? 'poster' : ''),
+          voice: d.voice && typeof d.voice.id === 'string' && /^[a-zA-Z0-9-]{1,100}$/.test(d.voice.id) ? { id: d.voice.id, duration: Math.max(0, Math.min(300, Number(d.voice.duration) || 0)) } : null,
           dateStamp: parse(d.dateStamp) ? d.dateStamp : '',
           book: String(d.book ?? '').slice(0, 140),
           author: String(d.author ?? '').slice(0, 100),
@@ -86,7 +88,8 @@
     return cur;
   };
   const joinNames = a => a.length < 2 ? a.join('') : a.slice(0, -1).join(', ') + ' va ' + a[a.length - 1];
-  const summarized = () => S.days.every(d => d.summary.trim());
+  const hasSummary = d => d.format === 'voice' ? !!d.voice : !!d.summary.trim();
+  const summarized = () => S.days.every(hasSummary);
   const unlocked = () => S.days.every(d => d.done) && summarized();
   const certId = () => {
     const base = (S.name || 'anon') + S.start + TOTAL; let h = 0;
@@ -115,17 +118,17 @@
 
   const shareBtn = i => {
     const d = S.days[i];
-    return d.done && d.summary.trim()
-      ? `<button type="button" class="rc-share-btn" onclick="rcShare(${i})">👁 Kartani ko‘rish va yuborish</button>` : '';
+    return hasSummary(d)
+      ? `<button type="button" class="rc-share-btn" onclick="rcShare(${i})">3. Ko‘rib chiqish va ulashish →</button>` : '';
   };
 
   const extrasHTML = i => {
     const d = S.days[i];
     return d.extra.map((e, k) => `<div class="rc-extra">
-        <div class="rc-extra-top"><b>${k + 2}-xulosa · alohida rasm</b><button type="button" class="rc-extra-x" onclick="rcExtraDel(${i},${k})" aria-label="${k + 2}-xulosani o‘chirish">✕</button></div>
+        <div class="rc-extra-top"><b>${k + 2}-xulosa${d.format === 'poster' ? ' · alohida rasm' : ''}</b><button type="button" class="rc-extra-x" onclick="rcExtraDel(${i},${k})" aria-label="${k + 2}-xulosani o‘chirish">✕</button></div>
         <input class="rc-extra-title" type="text" maxlength="60" value="${esc(e.title)}" placeholder="Mavzu (ixtiyoriy) — masalan: Odatlar" oninput="rcExtra(${i},${k},'title',this.value)" aria-label="${k + 2}-xulosa mavzusi">
         <textarea class="rc-summary" maxlength="2000" placeholder="Boshqa mavzu bo‘yicha xulosa…" oninput="rcExtra(${i},${k},'text',this.value)" aria-label="${k + 2}-xulosa matni">${esc(e.text)}</textarea>
-      </div>`).join('') + (d.extra.length < MAX_EXTRA ? `<button type="button" class="rc-extra-add" onclick="rcExtraAdd(${i})">➕ Yana xulosa qo‘shish (alohida rasm)</button>` : '');
+      </div>`).join('') + (d.extra.length < MAX_EXTRA ? `<button type="button" class="rc-extra-add" onclick="rcExtraAdd(${i})">➕ Yana xulosa qo‘shish${d.format === 'poster' ? ' (alohida rasm)' : ''}</button>` : '');
   };
 
   const dayHTML = i => {
@@ -135,28 +138,35 @@
     return `<article class="rc-day ${d.done ? 'done' : ''} ${isToday ? 'today' : ''} ${missed ? 'missed' : ''}" id="rc-day-${i}">
       <div class="rc-day-top">
         <div><b class="rc-day-num">${i + 1}-kun</b><small>${date ? short(date) : ''}${tag}</small></div>
-        <button type="button" class="rc-check ${d.done ? 'on' : ''}" onclick="rcToggle(${i})" aria-pressed="${d.done}" aria-label="${i + 1}-kunni ${d.done ? 'bekor qilish' : 'tugallandi deb belgilash'}">${d.done ? '✓' : ''}</button>
+        <div class="rc-done-control"><small>${d.done ? 'Kun tugallandi' : 'O‘qidim'}</small><button type="button" class="rc-check ${d.done ? 'on' : ''}" onclick="rcToggle(${i})" aria-pressed="${d.done}" aria-label="${i + 1}-kunni ${d.done ? 'bekor qilish' : 'tugallandi deb belgilash'}">${d.done ? '✓' : ''}</button></div>
       </div>
+      <p class="rc-step-label">1. O‘qish ma’lumotlari</p>
       <div class="rc-pages">
         <input type="number" min="0" max="9999" inputmode="numeric" value="${d.pages}" oninput="rcPages(${i},this.value)" aria-label="${i + 1}-kun: o‘qilgan sahifalar soni">
         <span>sahifa o‘qildi</span>
       </div>
       <label class="rc-newbook"><input type="checkbox" ${d.newBook ? 'checked' : ''} onchange="rcNewBook(${i},this.checked)"><span>Kitobni tugatdim — bugun yangisini boshladim</span></label>
       ${d.newBook ? `<input class="rc-booktitle" type="text" maxlength="140" value="${esc(d.book)}" placeholder="Yangi kitob nomi" oninput="rcBookTitle(${i},this.value)" aria-label="Yangi kitob nomi"><input class="rc-booktitle" type="text" maxlength="100" value="${esc(d.author)}" placeholder="Yangi kitob muallifi" oninput="rcBookAuthor(${i},this.value)" aria-label="Yangi kitob muallifi">` : ''}
-      <textarea class="rc-summary" maxlength="2000" placeholder="Qisqa xulosa (3–5 gap): nimani o‘qidim, eng muhim fikr nima, menga nima beradi?" oninput="rcSummary(${i},this.value)" aria-label="${i + 1}-kun xulosasi">${esc(d.summary)}</textarea>
+      <p class="rc-day-meta" id="rc-meta-${i}">${detailsHTML(i)}</p>
+      <p class="rc-step-label">2. Xulosa shaklini tanlang</p>
+      <div class="rc-formats" role="group" aria-label="${i + 1}-kun xulosa shakli">${[['voice','🎙','Ovoz','Gapirib ayting'],['text','✍','Matn','Xabar yozing'],['poster','▧','Poster','Matnli rasm']].map(([key,icon,label,hint]) => `<button type="button" aria-pressed="${d.format === key}" onclick="rcFormat(${i},'${key}')"><span aria-hidden="true">${icon}</span><b>${label}</b><small>${hint}</small></button>`).join('')}</div>
+      ${!d.format ? '<p class="rc-format-hint">Avval shaklni tanlang. Keyin yozish yoki ovoz yozib olish maydoni ochiladi.</p>' : d.format === 'voice' ? `<div id="rc-voice-${i}" class="rc-voice">${voiceHTML(i)}</div>` : `
+      <label class="rc-summary-label">${d.format === 'poster' ? 'Poster uchun xulosangiz' : 'Xulosangiz'}<textarea class="rc-summary" maxlength="2000" placeholder="Nimani o‘qidim? Eng muhim fikr nima? Uni qanday qo‘llayman? (3–5 gap)" oninput="rcSummary(${i},this.value)" aria-label="${i + 1}-kun xulosasi">${esc(d.summary)}</textarea></label>
+      <p class="rc-format-hint">${d.format === 'poster' ? 'Matningiz kitob ma’lumotlari bilan rasmga aylanadi.' : 'Matningiz kitob ma’lumotlari bilan Telegram xabari bo‘ladi.'}</p>
+      <details class="rc-optional"><summary>Qo‘shimcha xulosa yoki iqtibos (ixtiyoriy)</summary>
       <div class="rc-extras" id="rc-extras-${i}">${extrasHTML(i)}</div>
       <div class="rc-quote-box">
         <textarea class="rc-quote" maxlength="400" placeholder="Iqtibos (ixtiyoriy) — kitobdan yoqqan jumla" oninput="rcQuote(${i},'quote',this.value)" aria-label="${i + 1}-kun iqtibosi (ixtiyoriy)">${esc(d.quote)}</textarea>
         <input class="rc-quote-by" type="text" maxlength="80" value="${esc(d.quoteBy)}" placeholder="Muallif (ixtiyoriy)" oninput="rcQuote(${i},'quoteBy',this.value)" aria-label="${i + 1}-kun iqtibos muallifi">
-      </div>
+      </div></details>`}
       <div class="rc-share" id="rc-share-${i}">${shareBtn(i)}</div>
     </article>`;
   };
 
   const certHTML = () => {
     if (!unlocked()) {
-      const n = S.days.filter(d => d.summary.trim()).length;
-      return `<div class="rc-locked"><span>🔒</span><p>Sertifikatni ochish uchun barcha 15 kunni — har birini belgilab va xulosa yozib — tugating.</p><small>${doneCount()}/${TOTAL} kun belgilangan · ${n}/${TOTAL} xulosa yozilgan</small></div>`;
+      const n = S.days.filter(hasSummary).length;
+      return `<div class="rc-locked"><span>🔒</span><p>Sertifikat uchun 15 kunning har birini belgilang va matnli yoki ovozli xulosa tayyorlang.</p><small>${doneCount()}/${TOTAL} kun belgilangan · ${n}/${TOTAL} xulosa tayyor</small></div>`;
     }
     const names = bookNames(), pages = S.days.reduce((s, d) => s + d.pages, 0);
     const quoted = names.map(n => `<span class="rc-cert-book">“${esc(n)}”</span>`);
@@ -186,7 +196,8 @@
   };
 
   const setupHTML = () => `<section class="rc-card rc-setup">
-    <h2>Sizning kartangiz</h2>
+    <h2>Avval o‘zingiz va kitobingizni tanishtiring</h2>
+    <p class="rc-format-hint">Bu ma’lumotlar barcha matn, ovoz va poster xulosalariga qo‘shiladi.</p>
     <div class="rc-grid2">
       <label>Ism<input type="text" maxlength="80" value="${esc(S.name)}" placeholder="${esc(profileName() || 'Ismingiz')}" oninput="rcField('name',this.value)"></label>
       <label>Hozirgi kitob<input type="text" maxlength="140" value="${esc(S.book)}" placeholder="O‘qiyotgan kitobingiz nomi" oninput="rcField('book',this.value)"></label>
@@ -208,10 +219,9 @@
     }).catch(() => {});
   };
   const TEMPLATE = 'Bugun … kitobining … qismini o‘qidim.\nEng muhim fikr: …\nBu menga …\nSavol yoki iqtibos: …';
-  const guideHTML = () => `<section class="rc-card rc-guide" id="rc-guide">
-    <span class="rc-kicker">XULOSA YOZISH QO‘LLANMASI</span>
-    <h2>Qanday xulosa yoziladi?</h2>
-    <p class="rc-lead">Xulosa — kitobni qaytarib yozish emas. O‘qiganingizdan nima qolganini <b>o‘z so‘zingiz bilan</b> aytish. Kuniga 5 sahifa o‘qib, 3–5 ta gap yozsangiz, yetarli.</p>
+  const guideHTML = () => `<details class="rc-card rc-guide" id="rc-guide">
+    <summary><b>Xulosa tayyorlash bo‘yicha yordam</b><span>Yozish yoki gapirib aytish uchun sodda savollar</span></summary>
+    <p class="rc-lead">Xulosa — o‘qiganingizdan nima qolganini <b>o‘z so‘zingiz bilan</b> aytish. 3–5 gap yozing yoki ovozli xulosa yozib oling.</p>
     <ol class="rc-steps">
       <li><i>1</i><div><b>Nimani o‘qidim?</b><span>Bir gapda ayting: kitob nomi va bugungi sahifalar nima haqida edi.</span></div></li>
       <li><i>2</i><div><b>Eng muhim fikr nima?</b><span>Sizni to‘xtatib qo‘ygan bitta fikrni tanlang va o‘z so‘zingiz bilan yozing.</span></div></li>
@@ -224,7 +234,7 @@
       <div class="dont"><b>✕ Kerak emas</b><ul><li>Kitobdan ko‘chirib yozish</li><li>«Yaxshi kitob ekan» kabi umumiy gap</li><li>Juda uzun yozish — qisqa bo‘lsin</li></ul></div>
     </div>
     <button type="button" class="rc-btn" onclick="rcCopyTemplate()">📋 Shablonni nusxalash</button>
-  </section>`;
+  </details>`;
 
   window.booksView = () => { setTimeout(loadBot, 0); return `<section class="rc-app">
     <header class="rc-hero">
@@ -235,7 +245,7 @@
         <h1>15 kunlik Mutolaa challenge’i</h1>
         <div class="rc-trio"><span>15 kun</span><i>•</i><span>1 kitob</span><i>•</i><span>0 so‘m</span></div>
         <span class="rc-free">MUTLAQO BEPUL</span>
-        <p>Har kuni kitob o‘qing, sahifalaringizni belgilang va o‘z xulosangizni yozing. Kuniga 5 sahifa ham yetarli.</p>
+        <p>Har kuni kitob o‘qing, sahifalaringizni belgilang va xulosangizni yozing yoki ovozga yozib oling. Kuniga 5 sahifa ham yetarli.</p>
       </div>
     </header>
     <div class="rc-wrap">
@@ -253,6 +263,7 @@
       </section>
       ${guideHTML()}
       <h2 class="rc-h2">Sizning 15 kuningiz</h2>
+      <p class="rc-flow-hint">Har kuni: sahifalarni kiriting → Ovoz, Matn yoki Poster tanlang → xulosani tayyorlang → tekshirib ulashing. O‘qib bo‘lgach, «O‘qidim» belgisini bosing.</p>
       <div class="rc-days" id="rc-days">${S.days.map((_, i) => dayHTML(i)).join('')}</div>
       <h2 class="rc-h2">Sertifikat</h2>
       <div id="rc-cert">${certHTML()}</div>
@@ -269,10 +280,10 @@
   window.bookWelcomeView = () => {
     const step = state.bookWelcome;
     const body = step === 1
-      ? `<div class="program-kicker">KITOBXONLIK · 01 / 03</div><h1>15 kun. 1 kitob. 0 so‘m.</h1><p>Ilm Yo‘lida | Mutolaa — mutlaqo bepul challenge. Har kuni 5 sahifa o‘qing va o‘z xulosangizni yozing.</p><button class="program-primary" onclick="setBookWelcome(2)">Boshlash →</button>`
+      ? `<div class="program-kicker">KITOBXONLIK · 01 / 03</div><h1>15 kun. 1 kitob. 0 so‘m.</h1><p>Ilm Yo‘lida | Mutolaa — mutlaqo bepul challenge. Har kuni 5 sahifa o‘qing va xulosangizni yozing yoki ovozga yozib oling.</p><button class="program-primary" onclick="setBookWelcome(2)">Boshlash →</button>`
       : step === 2
-        ? `<div class="program-kicker">KITOBXONLIK · 02 / 03</div><h1>O‘qing. Belgilang. Xulosa yozing.</h1><div class="program-steps"><div><b>01 · Kunlik o‘qish</b><span>Har kuni kitob o‘qing va sahifalaringizni belgilang.</span></div><div><b>02 · Xulosa</b><span>O‘z xulosangizni yozing va mini-guruhga yuboring.</span></div><div><b>03 · Sertifikat</b><span>15 kunni tugatsangiz, ismingizdagi sertifikat ochiladi.</span></div></div><div class="program-actions"><button class="program-back" onclick="setBookWelcome(1)">← Ortga</button><button class="program-primary" onclick="setBookWelcome(3)">Ichkarida nima bor? →</button></div>`
-        : `<div class="program-kicker">KITOBXONLIK · 03 / 03</div><h1>Kunlik reja. Xulosa kartasi. Sertifikat.</h1><div class="program-preview-grid"><article><b>15 kunlik reja</b><span>Sahifa, kitob va xulosa — kunma-kun.</span><i></i></article><article><b>Xulosa kartasi</b><span>Kunlik xulosangizni rasm qilib ulashing.</span><i></i></article><article><b>Sertifikat</b><span>Challenge yakunida ismingizdagi sertifikat.</span><i></i></article></div><p>Bugundan boshlang — birinchi 5 sahifa sizni kutyapti.</p><div class="program-actions"><button class="program-back" onclick="setBookWelcome(2)">← Ortga</button><button class="program-primary" onclick="enterBooks()">Kitobxonlikka kirish →</button></div>`;
+        ? `<div class="program-kicker">KITOBXONLIK · 02 / 03</div><h1>O‘qing. Belgilang. Ulashing.</h1><div class="program-steps"><div><b>01 · Kunlik o‘qish</b><span>Har kuni kitob o‘qing va sahifalaringizni belgilang.</span></div><div><b>02 · Xulosa</b><span>Ovoz, oddiy matn yoki poster tanlang. Xulosangizni tayyorlab, guruhga ulashing.</span></div><div><b>03 · Sertifikat</b><span>15 kunni xulosalari bilan tugatsangiz, ismingizdagi sertifikat ochiladi.</span></div></div><div class="program-actions"><button class="program-back" onclick="setBookWelcome(1)">← Ortga</button><button class="program-primary" onclick="setBookWelcome(3)">Ichkarida nima bor? →</button></div>`
+        : `<div class="program-kicker">KITOBXONLIK · 03 / 03</div><h1>Kunlik reja. Xulosalar. Sertifikat.</h1><div class="program-preview-grid"><article><b>15 kunlik reja</b><span>Sahifa, kitob va xulosa — kunma-kun.</span><i></i></article><article><b>3 xil xulosa</b><span>Ovoz, oddiy matn yoki matnli poster — o‘zingiz tanlang.</span><i></i></article><article><b>Sertifikat</b><span>Challenge yakunida ismingizdagi sertifikat.</span><i></i></article></div><p>Bugundan boshlang — birinchi 5 sahifa sizni kutyapti.</p><div class="program-actions"><button class="program-back" onclick="setBookWelcome(2)">← Ortga</button><button class="program-primary" onclick="enterBooks()">Kitobxonlikka kirish →</button></div>`;
     return `<section class="program-entry book-entry"><button class="program-return" onclick="programBack()">← Ilm maydoniga qaytish</button><div class="program-entry-content">${body}</div></section>`;
   };
 
@@ -281,7 +292,7 @@
   let certSig = '';
   const refresh = () => {
     setHTML('rc-top', topHTML());
-    const sig = unlocked() ? JSON.stringify([readerName(), bookNames(), S.start, S.days.map(d => d.pages), completedOn().getTime()]) : 'locked:' + doneCount() + ':' + S.days.filter(d => d.summary.trim()).length;
+    const sig = unlocked() ? JSON.stringify([readerName(), bookNames(), S.start, S.days.map(d => d.pages), completedOn().getTime()]) : 'locked:' + doneCount() + ':' + S.days.filter(hasSummary).length;
     if (sig !== certSig) { certSig = sig; setHTML('rc-cert', certHTML()); }
   };
   const repaintDay = i => { const e = document.getElementById('rc-day-' + i); if (e) e.outerHTML = dayHTML(i); };
@@ -297,14 +308,142 @@
   const download = (href, name) => { const a = document.createElement('a'); a.href = href; a.download = name; document.body.appendChild(a); a.click(); a.remove(); };
   const fontsReady = () => (document.fonts && document.fonts.ready ? document.fonts.ready.catch(() => {}) : Promise.resolve());
 
-  let rcPrev = null, rcPrevDay = 0;
+  let rcPrev = null, rcPrevDay = 0, previewVersion = 0;
+  const previewText = () => rcPrev ? rcPrev.details + (rcPrev.format === 'text' ? '\n\nXulosa:\n' + (document.getElementById('rc-prev-cap')?.value || '') : rcPrev.format === 'voice' ? '\n\n🎙 Ovozli xulosa' : '') + '\n\n#IlmYolidaMutolaa' : '';
   const captionFor = i => {
-    const d = S.days[i], book = bookForDay(i);
-    return `📖 ${i + 1}-kun | ${readerName()}\n${book ? `Kitob: ${book}${authorForDay(i) ? ' — ' + authorForDay(i) : ''}\n` : ''}📄 Bugun: ${d.pages} sahifa\n${d.extra.filter(e => e.text.trim() && e.title.trim()).length ? 'Mavzular: ' + d.extra.filter(e => e.text.trim() && e.title.trim()).map(e => e.title.trim()).join(', ') + '\n' : ''}\n#${i + 1}kun_tugallandi #IlmYolidaMutolaa`;
+    return `Ilm Yo‘lida · Mutolaa\n📅 ${i + 1}-kun / ${TOTAL} · ${long(dayDate(i))}\n📖 Kitob: ${bookForDay(i)}\nMuallif: ${authorForDay(i)}\nO‘quvchi: ${readerName()}\n📄 O‘qildi: ${S.days[i].pages} sahifa`;
   };
+  const detailsHTML = i => `<b>${esc(bookForDay(i) || 'Kitob nomini yuqorida kiriting')}</b><br>Muallif: ${esc(authorForDay(i) || 'yuqorida kiriting')}<br>O‘quvchi: ${esc(readerName())}`;
+  const refreshDetails = () => S.days.forEach((_, i) => setHTML('rc-meta-' + i, detailsHTML(i)));
+  const validDetails = i => {
+    if (!(S.name.trim() || profileName()) || !bookForDay(i) || !authorForDay(i) || !S.days[i].pages) {
+      toast('Ism, kitob nomi, muallif va o‘qilgan sahifalar sonini kiriting.');
+      return false;
+    }
+    return true;
+  };
+  const textFor = i => {
+    const d = S.days[i];
+    return [d.summary.trim(), ...d.extra.filter(e => e.text.trim()).map(e => [e.title.trim(), e.text.trim()].filter(Boolean).join('\n')), d.quote.trim() ? `“${d.quote.trim()}”${d.quoteBy.trim() ? ' — ' + d.quoteBy.trim() : ''}` : ''].filter(Boolean).join('\n\n');
+  };
+
+  // Audio stays in IndexedDB; localStorage only holds small references.
+  let audioDB;
+  const audioStore = async (mode, action) => {
+    if (!window.indexedDB) throw new Error('Audio storage unavailable');
+    if (!audioDB) audioDB = new Promise((resolve, reject) => {
+      const req = indexedDB.open('ilm-mutolaa-audio', 1);
+      req.onupgradeneeded = () => req.result.createObjectStore('clips');
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+      req.onblocked = () => reject(new Error('Audio storage blocked'));
+    }).catch(error => { audioDB = null; throw error; });
+    const db = await audioDB;
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction('clips', mode), req = action(tx.objectStore('clips'));
+      tx.oncomplete = () => resolve(req.result);
+      tx.onerror = tx.onabort = () => reject(tx.error || new Error('Audio storage failed'));
+    });
+  };
+  const getAudio = id => audioStore('readonly', store => store.get(id));
+  const putAudio = (id, blob) => audioStore('readwrite', store => store.put(blob, id));
+  const deleteAudio = id => audioStore('readwrite', store => store.delete(id)).catch(() => {});
+  const clipURLs = new Map();
+  const dropClipURL = id => { if (clipURLs.has(id)) URL.revokeObjectURL(clipURLs.get(id)); clipURLs.delete(id); };
+  const clockText = seconds => `${pad(Math.floor(seconds / 60))}:${pad(Math.floor(seconds % 60))}`;
+  let recording = null;
+  const voiceHTML = i => {
+    const d = S.days[i], active = recording?.i === i;
+    if (active) return `<p role="status">${recording.recorder ? '🔴 Ovoz yozilmoqda' : 'Mikrofonga ruxsat kutilmoqda…'} <b id="rc-timer-${i}">${clockText(recording.seconds || 0)}</b></p><button type="button" class="rc-btn ${recording.recorder ? 'red' : ''}" onclick="rcRecordStop()">${recording.recorder ? '■ To‘xtatish va saqlash' : 'Bekor qilish'}</button>`;
+    return `<p class="rc-format-hint">O‘qiganlaringizni o‘z so‘zingiz bilan ayting. Ko‘pi bilan 5 daqiqa. Yuborishdan oldin tinglashingiz mumkin.</p>${d.voice ? `<p>✓ Ovozli xulosa saqlangan · ${clockText(d.voice.duration)}</p>${clipURLs.has(d.voice.id) ? `<audio controls preload="metadata" src="${clipURLs.get(d.voice.id)}" aria-label="${i + 1}-kun ovozli xulosasi"></audio>` : `<button type="button" class="rc-btn" onclick="rcVoiceListen(${i})">▶ Yozuvni tinglash</button>`}` : ''}<div class="rc-voice-actions"><button type="button" class="rc-btn primary" onclick="rcRecordStart(${i})">🎙 ${d.voice ? 'Qayta yozish' : 'Ovoz yozishni boshlash'}</button>${d.voice ? `<button type="button" class="rc-btn red-outline" onclick="rcVoiceDelete(${i})">O‘chirish</button>` : ''}</div><small>Ovoz shu brauzerda saqlanadi. Zaxira nusxaga ham qo‘shiladi.</small>`;
+  };
+  const updateVoice = i => { setHTML('rc-voice-' + i, voiceHTML(i)); setHTML('rc-share-' + i, shareBtn(i)); refresh(); };
+  const stopTracks = session => { clearInterval(session.timer); session.stream?.getTracks().forEach(track => track.stop()); };
+  const recordingGuard = () => {
+    if (!recording) return false;
+    toast('Avval ovoz yozishni to‘xtating va saqlanishini kuting.'); return true;
+  };
+  const blobDataURL = blob => new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(reader.result); reader.onerror = reject; reader.readAsDataURL(blob); });
+
+  Object.assign(window, {
+    rcFormat(i, format) {
+      if (recordingGuard() || !['voice', 'text', 'poster'].includes(format)) return;
+      S.days[i].format = format; save(); repaintDay(i); refresh();
+    },
+    async rcVoiceListen(i) {
+      const voice = S.days[i].voice; if (!voice) return;
+      try {
+        const blob = await getAudio(voice.id);
+        if (!blob?.size) throw new Error('Missing audio');
+        if (S.days[i].voice?.id !== voice.id) return;
+        dropClipURL(voice.id); clipURLs.set(voice.id, URL.createObjectURL(blob)); updateVoice(i);
+      } catch { toast('Ovoz topilmadi. Zaxira nusxadan tiklang yoki qayta yozing.'); }
+    },
+    async rcRecordStart(i) {
+      if (recordingGuard() || !validDetails(i)) return;
+      if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) { toast('Bu brauzerda ovoz yozib bo‘lmaydi. HTTPS orqali Chrome yoki Safari’da oching yoki Matn shaklini tanlang.'); return; }
+      if (S.days[i].voice && !confirm('Yangi yozuv saqlangach, avvalgi ovoz almashtiriladi. Davom etasizmi?')) return;
+      const session = { i, seconds: 0, chunks: [], bytes: 0, day: S.days[i] };
+      recording = session; updateVoice(i);
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        session.stream = stream;
+        if (recording !== session || !document.getElementById('rc-voice-' + i)) { stopTracks(session); if (recording === session) recording = null; return; }
+        const mimeType = ['audio/mp4', 'audio/ogg;codecs=opus', 'audio/webm;codecs=opus', 'audio/webm'].find(type => MediaRecorder.isTypeSupported?.(type));
+        const recorder = new MediaRecorder(stream, { ...(mimeType ? { mimeType } : {}), audioBitsPerSecond: 64000 });
+        session.recorder = recorder;
+        recorder.ondataavailable = event => {
+          if (event.data.size) { session.chunks.push(event.data); session.bytes += event.data.size; }
+          if (session.bytes > 10 * 1024 * 1024 && recorder.state === 'recording') window.rcRecordStop();
+        };
+        recorder.onerror = () => { session.failed = true; if (recorder.state !== 'inactive') recorder.stop(); stopTracks(session); recording = null; updateVoice(i); toast('Ovoz yozishda xato. Avvalgi xulosangiz saqlangan. Qayta urinib ko‘ring.'); };
+        recorder.onstop = async () => {
+          stopTracks(session);
+          try {
+            if (session.failed || session.discard || S.days[i] !== session.day) return;
+            const blob = new Blob(session.chunks, { type: recorder.mimeType || session.chunks[0]?.type || 'audio/webm' });
+            if (!blob.size || session.bytes > 11 * 1024 * 1024) throw new Error('Empty or oversized audio');
+            const id = `clip-${Date.now()}-${Math.random().toString(36).slice(2)}`, previous = session.day.voice;
+            await putAudio(id, blob);
+            if (session.discard || S.days[i] !== session.day) { deleteAudio(id); return; }
+            session.day.voice = { id, duration: Math.min(300, (Date.now() - session.started) / 1000) };
+            if (save() === false) { session.day.voice = previous; deleteAudio(id); throw new Error('Save failed'); }
+            clipURLs.set(id, URL.createObjectURL(blob));
+            if (previous) { dropClipURL(previous.id); deleteAudio(previous.id); }
+            toast('Ovoz saqlandi. Tinglab, keyin ulashing.');
+          } catch { toast('Ovoz saqlanmadi. Qurilmada bo‘sh joy va brauzer ruxsatlarini tekshirib, qayta yozing.'); }
+          finally { if (recording === session) recording = null; updateVoice(i); }
+        };
+        recorder.start(1000); session.started = Date.now(); updateVoice(i);
+        session.timer = setInterval(() => {
+          session.seconds = Math.floor((Date.now() - session.started) / 1000);
+          const timer = document.getElementById('rc-timer-' + i); if (timer) timer.textContent = clockText(session.seconds);
+          if (session.seconds >= 300 || !document.getElementById('rc-voice-' + i)) window.rcRecordStop();
+        }, 250);
+      } catch (error) {
+        stopTracks(session); if (recording === session) recording = null; updateVoice(i);
+        toast(error.name === 'NotAllowedError' ? 'Mikrofonga ruxsat berilmadi. Brauzer sozlamalarida ruxsat bering yoki Matn shaklini tanlang.' : 'Mikrofonni ishga tushirib bo‘lmadi. Ulanganini tekshirib, qayta urinib ko‘ring.');
+      }
+    },
+    rcRecordStop() {
+      const session = recording; if (!session) return;
+      if (!session.recorder) { recording = null; stopTracks(session); updateVoice(session.i); return; }
+      if (session.recorder.state === 'inactive') return;
+      clearInterval(session.timer); session.recorder.stop(); stopTracks(session);
+      setHTML('rc-voice-' + session.i, '<p role="status">Ovoz saqlanmoqda…</p>');
+    },
+    async rcVoiceDelete(i) {
+      if (recordingGuard() || !S.days[i].voice || !confirm('Shu kunning ovozli xulosasi o‘chirilsinmi?')) return;
+      const previous = S.days[i].voice; S.days[i].voice = null;
+      if (save() === false) { S.days[i].voice = previous; return; }
+      dropClipURL(previous.id); await deleteAudio(previous.id); updateVoice(i);
+    },
+  });
+  window.addEventListener('pagehide', () => { if (recording) window.rcRecordStop(); });
+  window.addEventListener('beforeunload', event => { if (recording) { event.preventDefault(); event.returnValue = ''; } });
   /* ---------- harakatlar ---------- */
   Object.assign(window, {
-    rcField(field, value) { S[field] = String(value).slice(0, field === 'name' ? 80 : field === 'author' ? 100 : 140); save(); refresh(); },
+    rcField(field, value) { S[field] = String(value).slice(0, field === 'name' ? 80 : field === 'author' ? 100 : 140); save(); refresh(); refreshDetails(); },
     rcStart(value) {
       if (!parse(value)) return;
       S.start = value; save();
@@ -325,14 +464,14 @@
     },
     rcNewBook(i, checked) {
       const d = S.days[i]; d.newBook = checked; if (!checked) { d.book = ''; d.author = ''; }
-      save(); repaintDay(i); certSig = ''; refresh();
+      save(); repaintDay(i); certSig = ''; refresh(); refreshDetails();
     },
     rcExtraAdd(i) { const d = S.days[i]; if (d.extra.length >= MAX_EXTRA) return; d.extra.push({ title: '', text: '' }); save(); setHTML('rc-extras-' + i, extrasHTML(i)); },
     rcExtraDel(i, k) { S.days[i].extra.splice(k, 1); save(); setHTML('rc-extras-' + i, extrasHTML(i)); },
     rcExtra(i, k, field, value) { const e = S.days[i].extra[k]; if (!e) return; e[field] = String(value).slice(0, field === 'title' ? 60 : 2000); save(); },
     rcQuote(i, field, value) { S.days[i][field] = String(value).slice(0, field === 'quote' ? 400 : 80); save(); },
-    rcBookAuthor(i, value) { S.days[i].author = String(value).slice(0, 100); save(); },
-    rcBookTitle(i, value) { S.days[i].book = String(value).slice(0, 140); save(); refresh(); },
+    rcBookAuthor(i, value) { S.days[i].author = String(value).slice(0, 100); save(); refreshDetails(); },
+    rcBookTitle(i, value) { S.days[i].book = String(value).slice(0, 140); save(); refresh(); refreshDetails(); },
     async rcBuild(i) {
       const d = S.days[i];
       if (typeof html2canvas === 'undefined') { toast('Dalil kartasini yaratish uchun internet aloqasi kerak.'); return null; }
@@ -395,49 +534,78 @@
     /* Ko‘rib chiqish oynasi: karta aynan guruhga ketadigan ko‘rinishda chiqadi, caption tahrirlanadi */
     async rcShare(i) {
       const d = S.days[i];
-      toast('Dalil kartasi tayyorlanmoqda…');
-      const built = await window.rcBuild(i);
+      if (recordingGuard() || !hasSummary(d) || !validDetails(i)) return;
+      window.rcPreviewClose();
+      const version = previewVersion, format = d.format;
+      let built;
+      if (d.format === 'voice') {
+        try {
+          const blob = await getAudio(d.voice.id);
+          if (!blob?.size) throw new Error('Missing audio');
+          const ext = blob.type.includes('mp4') ? 'm4a' : blob.type.includes('ogg') ? 'ogg' : 'webm';
+          built = { files: [new File([blob], `${i + 1}-kun-ovozli-xulosa.${ext}`, { type: blob.type })], urls: [URL.createObjectURL(blob)] };
+        } catch { toast('Ovoz topilmadi. Zaxira nusxadan tiklang yoki qayta yozing.'); return; }
+      } else if (d.format === 'text') built = { files: [], urls: [] };
+      else { toast('Poster tayyorlanmoqda…'); built = await window.rcBuild(i); }
       if (!built) return;
-      rcPrev = built; rcPrevDay = i;
+      if (version !== previewVersion || S.days[i] !== d || d.format !== format) { built.urls.forEach(url => URL.revokeObjectURL(url)); return; }
+      rcPrev = { ...built, format: d.format, details: captionFor(i) }; rcPrevDay = i;
       const old = document.getElementById('rc-prev'); if (old) old.remove();
       const wrap = document.createElement('div');
       wrap.innerHTML = `<div class="rc-modal-back" id="rc-prev" onclick="if(event.target===this)rcPreviewClose()">
-        <div class="rc-modal rc-prev" role="dialog" aria-modal="true" aria-label="Dalil kartasini ko‘rib chiqish">
+        <div class="rc-modal rc-prev" role="dialog" aria-modal="true" aria-label="Xulosani ko‘rib chiqish" tabindex="-1">
           <button type="button" class="rc-modal-x" onclick="rcPreviewClose()" aria-label="Yopish">✕</button>
-          <h2>Kartani ko‘rib chiqing</h2>
-          <p class="rc-prev-hint">Guruhga aynan shu ko‘rinishda ketadi. Xato bo‘lsa «Tahrirlash» ni bosing, matnni tuzating va qayta oching.</p>
+          <h2>3. ${d.format === 'voice' ? 'Tinglang va ulashing' : d.format === 'text' ? 'Matnni tekshiring va ulashing' : 'Posterni tekshiring va ulashing'}</h2>
+          <p class="rc-prev-hint">${d.format === 'voice' ? 'Ovoz va quyidagi kitob ma’lumotlarini birga ulashing. Ulashish oynasida Telegramni tanlang.' : d.format === 'text' ? 'Quyidagi ma’lumotlar va xulosa Telegram xabariga qo‘shiladi.' : 'Rasm va kitob ma’lumotlarini birga ulashing. Ulashish oynasida Telegramni tanlang.'}</p>
           ${built.clipped && built.clipped.length ? `<p class="rc-prev-warn">⚠️ ${built.clipped.join(', ')}-rasmda matn sig‘madi. «Tahrirlash» ni bosing va «➕ Yana xulosa qo‘shish» orqali matnni bo‘lib yozing.</p>` : ''}
-          <div class="rc-prev-imgs">${built.urls.map((u, k) => `<img src="${u}" alt="${i + 1}-kun dalil kartasi ${k + 1}">`).join('')}</div>
-          <label class="rc-prev-lbl" for="rc-prev-cap">Guruhdagi xabar matni (tahrirlash mumkin)</label>
-          <textarea id="rc-prev-cap" rows="5"></textarea>
+          ${d.format === 'voice' ? `<audio controls src="${built.urls[0]}" aria-label="Ovozli xulosani tinglash"></audio>` : `<div class="rc-prev-imgs">${built.urls.map((u, k) => `<img src="${u}" alt="${i + 1}-kun dalil kartasi ${k + 1}">`).join('')}</div>`}
+          <pre class="rc-share-details">${esc(rcPrev.details)}</pre>
+          ${d.format === 'text' ? '<label class="rc-prev-lbl" for="rc-prev-cap">Xulosa matni (tahrirlash mumkin)</label><textarea id="rc-prev-cap" rows="7"></textarea>' : '<p class="rc-format-hint">Kitob ma’lumotlarini o‘zgartirish uchun «Tahrirlash» tugmasini bosing.</p>'}
+          <p class="rc-format-hint">${d.format === 'text' ? '' : 'Telegram matnni birga qo‘shmasa, «Matnni nusxalash» orqali izohga joylang.'}</p>
+          <p id="rc-share-status" role="status"></p>
           <div class="rc-prev-btns">
             <button type="button" class="rc-btn" onclick="rcPreviewClose()">✏️ Tahrirlash</button>
             <button type="button" class="rc-btn" onclick="rcCopyCaption()">📋 Matnni nusxalash</button>
-            <button type="button" class="rc-btn primary" onclick="rcPreviewSend()">📤 Guruhga yuborish</button>
+            ${d.format !== 'text' ? '<button type="button" class="rc-btn" onclick="rcPreviewDownload()">⬇ Yuklab olish</button>' : ''}
+            <button type="button" class="rc-btn primary" onclick="rcPreviewSend(this)">📤 Telegramda ulashish</button>
           </div>
         </div></div>`;
       document.body.appendChild(wrap.firstElementChild);
-      document.getElementById('rc-prev-cap').value = captionFor(i);
+      const caption = document.getElementById('rc-prev-cap'); if (caption) caption.value = textFor(i);
+      document.querySelector('#rc-prev [role="dialog"]').focus();
     },
     rcPreviewClose() {
+      previewVersion++;
       const e = document.getElementById('rc-prev'); if (e) e.remove();
       if (rcPrev) { rcPrev.urls.forEach(u => URL.revokeObjectURL(u)); rcPrev = null; }
+      if (e) document.querySelector('#rc-share-' + rcPrevDay + ' button')?.focus();
     },
     async rcCopyCaption() {
-      const t = document.getElementById('rc-prev-cap'); if (!t) return;
-      try { await navigator.clipboard.writeText(t.value); toast('Matn nusxalandi — Telegramda rasm ostiga qo‘ying.'); }
-      catch { t.select(); document.execCommand && document.execCommand('copy'); toast('Matn nusxalandi.'); }
-    },
-    async rcPreviewSend() {
       if (!rcPrev) return;
-      const i = rcPrevDay, files = rcPrev.files, caption = (document.getElementById('rc-prev-cap') || {}).value || captionFor(i);
-      if (navigator.canShare && navigator.canShare({ files })) {
-        try { await navigator.share({ files, title: `${i + 1}-kun — ${readerName()}`, text: caption }); window.rcPreviewClose(); return; }
-        catch (err) { if (err && err.name === 'AbortError') return; }
-      }
-      files.forEach((f, k) => { const url = URL.createObjectURL(f); setTimeout(() => { download(url, f.name); setTimeout(() => URL.revokeObjectURL(url), 4000); }, k * 400); });
-      try { await navigator.clipboard.writeText(caption); } catch {}
-      toast(files.length > 1 ? `${files.length} ta rasm yuklab olindi, matn nusxalandi — hammasini Telegram guruhiga yuboring.` : 'Rasm yuklab olindi, matn nusxalandi — Telegram guruhiga yuboring.');
+      const text = previewText();
+      try { await navigator.clipboard.writeText(text); toast('Matn nusxalandi — Telegram xabariga qo‘ying.'); }
+      catch { window.prompt('Matnni nusxalab, Telegramga joylang:', text); }
+    },
+    rcPreviewDownload() {
+      if (!rcPrev) return;
+      rcPrev.files.forEach((file, k) => { const url = URL.createObjectURL(file); setTimeout(() => { download(url, file.name); setTimeout(() => URL.revokeObjectURL(url), 30000); }, k * 400); });
+      toast('Fayl yuklab olindi. Telegramda uni biriktiring va kitob ma’lumotlarini izohga qo‘ying.');
+    },
+    async rcPreviewSend(button) {
+      if (!rcPrev || button?.disabled) return;
+      const preview = rcPrev, files = preview.files, caption = previewText();
+      if (preview.format === 'text') { window.open(`https://t.me/share/url?url=&text=${encodeURIComponent(caption)}`, '_blank', 'noopener'); return; }
+      if (button) button.disabled = true;
+      try {
+        if (navigator.share && navigator.canShare?.({ files })) {
+          try { await navigator.share({ files, title: `${rcPrevDay + 1}-kun — ${readerName()}`, text: caption }); return; }
+          catch (err) { if (err?.name === 'AbortError') return; }
+        }
+        if (rcPrev !== preview) return;
+        window.rcPreviewDownload();
+        const status = document.getElementById('rc-share-status');
+        if (status) status.innerHTML = `Fayl yuklab olindi. <b>1.</b> Matnni nusxalang. <b>2.</b> Telegramni oching. <b>3.</b> Faylni biriktirib, matnni izohga qo‘ying. <a href="https://t.me/share/url?url=&amp;text=${encodeURIComponent(caption)}" target="_blank" rel="noopener">Telegramni ochish →</a>`;
+      } finally { if (button) button.disabled = false; }
     },
     async rcCertDownload() {
       const src = document.getElementById('rc-certificate'); if (!src) return;
@@ -465,25 +633,54 @@
       try { await navigator.clipboard.writeText(TEMPLATE); toast('Shablon nusxalandi. Xulosa maydoniga qo‘yib, nuqtalarni to‘ldiring.'); }
       catch { toast('Nusxalab bo‘lmadi. Shablon: ' + TEMPLATE.replace(/\n/g, ' ')); }
     },
-    rcExport() {
-      const blob = new Blob([JSON.stringify(S, null, 2)], { type: 'application/json' });
+    async rcExport() {
+      if (recordingGuard()) return;
+      const backup = JSON.parse(JSON.stringify(S)); backup.audio = {};
+      try {
+        for (const d of backup.days) if (d.voice) {
+          const blob = await getAudio(d.voice.id); if (!blob?.size) throw new Error('Missing audio');
+          backup.audio[d.voice.id] = await blobDataURL(blob);
+        }
+      } catch { toast('Ovozlarni zaxiralab bo‘lmadi. Saqlangan yozuvlarni tekshiring va qayta urinib ko‘ring.'); return; }
+      const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       download(url, `${(S.name.trim() || profileName() || 'mutolaa').replace(/\s+/g, '-').toLowerCase()}-mutolaa-zaxira.json`);
       setTimeout(() => URL.revokeObjectURL(url), 4000);
     },
     rcImport(input) {
+      if (recordingGuard()) { input.value = ''; return; }
       const file = input.files && input.files[0]; if (!file) return;
+      if (file.size > 230 * 1024 * 1024) { toast('Zaxira fayli juda katta.'); input.value = ''; return; }
+      if (!confirm('Zaxiradagi ma’lumotlar joriy challenge o‘rniga tiklanadi. Davom etasizmi?')) { input.value = ''; return; }
       const reader = new FileReader();
-      reader.onload = () => {
-        let next = null; try { next = clean(JSON.parse(reader.result)); } catch { next = null; }
+      reader.onerror = () => toast('Zaxira faylini o‘qib bo‘lmadi.');
+      reader.onload = async () => {
+        let next = null, raw; try { raw = JSON.parse(reader.result); next = clean(raw); } catch { next = null; }
         if (!next) { toast('Bu zaxira faylini o‘qib bo‘lmadi.'); return; }
-        S = next; save(); certSig = ''; render(); toast('Zaxira nusxa tiklandi.');
+        const inserted = [], previous = S;
+        try {
+          for (const d of next.days) if (d.voice) {
+            const data = raw.audio?.[d.voice.id];
+            if (typeof data !== 'string' || data.length > 16 * 1024 * 1024 || !/^data:audio\/(?:mp4|ogg|webm)(?:;codecs=[a-zA-Z0-9.,-]+)?;base64,[A-Za-z0-9+/]+={0,2}$/.test(data)) throw new Error('Invalid audio backup');
+            const comma = data.indexOf(','), binary = atob(data.slice(comma + 1));
+            const blob = new Blob([Uint8Array.from(binary, char => char.charCodeAt(0))], { type: data.slice(5, data.indexOf(';base64,')) });
+            const id = `clip-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+            await putAudio(id, blob); inserted.push(id); d.voice.id = id;
+          }
+          if (recording || S !== previous) throw new Error('Challenge changed');
+          S = next; if (save() === false) { S = previous; throw new Error('Save failed'); }
+          window.rcPreviewClose(); previous.days.forEach(d => { if (d.voice) { dropClipURL(d.voice.id); deleteAudio(d.voice.id); } });
+          certSig = ''; render(); toast('Zaxira nusxa ovozlar bilan tiklandi.');
+        } catch { inserted.forEach(deleteAudio); toast('Zaxira tiklanmadi. Fayldagi ovozlar va qurilma xotirasini tekshiring. Avvalgi ma’lumotlar saqlangan.'); }
       };
       reader.readAsText(file); input.value = '';
     },
     rcReset() {
+      if (recordingGuard()) return;
       if (!confirm('Shu qurilmadagi Mutolaa challenge natijalari tozalanadi. Davom etasizmi?')) return;
-      S = fresh(); save(); certSig = ''; render();
+      const previous = S; S = fresh(); if (save() === false) { S = previous; return; }
+      window.rcPreviewClose(); previous.days.forEach(d => { if (d.voice) { dropClipURL(d.voice.id); deleteAudio(d.voice.id); } });
+      certSig = ''; render();
     },
   });
 
@@ -570,6 +767,26 @@
 .rc-quote{min-height:54px;resize:vertical;font-size:.86rem!important;font-style:italic}
 .rc-quote-by{font-size:.86rem!important}
 .rc-summary{min-height:70px;resize:vertical;font-size:.88rem!important}
+.rc-step-label{font-size:.75rem;font-weight:850;color:var(--g);margin:18px 0 9px}
+.rc-done-control{display:flex;align-items:center;gap:6px}.rc-done-control small{font-size:.65rem}
+.rc-flow-hint{font-size:.85rem;line-height:1.8;color:var(--mut);margin:0 0 18px}
+.rc-guide>summary{cursor:pointer;color:var(--g);line-height:1.7}.rc-guide>summary span{display:block;font-size:.78rem;color:var(--mut);font-weight:400}
+.rc-day-meta{font-size:.78rem;line-height:1.65;color:var(--mut);overflow-wrap:anywhere;background:var(--cream);padding:10px;border-radius:9px}
+.rc-day-meta b{color:var(--ink)}
+.rc-formats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:10px 0 14px}
+.rc-formats button{font:inherit;display:flex;flex-direction:column;align-items:center;gap:5px;padding:10px 3px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink);cursor:pointer;min-height:82px}
+.rc-formats button[aria-pressed=true]{background:var(--g3);border:2px solid var(--g);padding:9px 2px;color:var(--g)}
+.rc-formats button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.rc-formats b{font-size:.82rem}.rc-formats button small{font-size:.61rem;color:inherit;font-weight:500}
+.rc-format-hint{font-size:.77rem;line-height:1.6;color:#64776d;margin:8px 0 14px}
+.rc-summary-label{text-transform:none!important;letter-spacing:0!important;margin-top:10px}
+.rc-optional{margin:12px 0}.rc-optional summary{font-size:.75rem;color:var(--mut);cursor:pointer;line-height:1.6}
+.rc-voice{padding:12px;background:var(--cream);border:1px solid var(--line);border-radius:12px}
+.rc-voice p{font-size:.8rem;line-height:1.6}.rc-voice small{display:block;line-height:1.6;margin-top:10px}
+.rc-voice audio,.rc-prev audio{display:block;width:100%;max-width:100%;margin:12px 0}
+.rc-voice-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.rc-voice-actions .rc-btn{padding:10px;font-size:.75rem}
+.rc-share-details{font:500 .85rem/1.8 Inter,system-ui,sans-serif;white-space:pre-wrap;overflow-wrap:anywhere;background:#f2f7f3;padding:16px;border-radius:12px;color:#17332b}
+#rc-share-status{font-size:.82rem;line-height:1.7;color:#07543f}#rc-share-status a{display:block;font-weight:800}
 .rc-share:empty{display:none}
 .rc-share{margin-top:10px}
 .rc-share-btn{width:100%;border:0;border-radius:10px;background:var(--gold);color:#2b2208;font:inherit;font-weight:800;font-size:.82rem;padding:10px;cursor:pointer;transition:filter .2s}
@@ -709,11 +926,11 @@
       <button type="button" class="rc-modal-x" onclick="rcInfoClose()" aria-label="Yopish">✕</button>
       <span class="rc-kicker">ILM YO‘LIDA | MUTOLAA</span>
       <h2>15 kunlik mutolaa challenge</h2>
-      <p class="rc-lead">15 kun • 1 kitob • 0 so‘m. Har kuni kamida 5 sahifa o‘qiysiz va 3–5 gap xulosa yozasiz. Jarimalar yo‘q — faqat odat.</p>
+      <p class="rc-lead">15 kun • 1 kitob • 0 so‘m. Har kuni kamida 5 sahifa o‘qiysiz va matnli yoki ovozli xulosa tayyorlaysiz. Jarimalar yo‘q — faqat odat.</p>
       <h3>Shartlar</h3>
       <ul class="rc-info-list">
         <li>Ishtirok <b>mutlaqo bepul</b>.</li>
-        <li>Kuniga kamida <b>5 sahifa</b> o‘qing va o‘z so‘zingiz bilan qisqa xulosa yozing.</li>
+        <li>Kuniga kamida <b>5 sahifa</b> o‘qing. Ovoz, Matn yoki Poster shaklini tanlab, o‘z so‘zingiz bilan xulosa tayyorlang.</li>
         <li>Hech qanday jarima yo‘q: o‘qimagan kuningiz hisobdan chiqarilmaydi.</li>
         <li>Eng faol ishtirokchilar kitob sovg‘alari bilan taqdirlanadi.</li>
         <li>Natijalar va yangiliklar <b>Telegram kanali</b>da e’lon qilinadi.</li>
@@ -746,7 +963,16 @@
     }).catch(() => { botName = null; }).then(show);
   };
   window.rcInfoClose = () => { const m = document.getElementById('rc-info'); if (m) m.remove(); };
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') window.rcInfoClose(); });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { window.rcInfoClose(); window.rcPreviewClose(); }
+    const modal = document.querySelector('#rc-prev [role="dialog"]');
+    if (modal && e.key === 'Tab') {
+      const controls = [...modal.querySelectorAll('button:not(:disabled), textarea, a[href], audio[controls]')];
+      const first = controls[0], last = controls[controls.length - 1];
+      if (e.shiftKey && (document.activeElement === first || document.activeElement === modal)) { e.preventDefault(); last?.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first?.focus(); }
+    }
+  });
   const baseSettings = window.settingsView;
   if (typeof baseSettings === 'function') {
     window.settingsView = function () {
